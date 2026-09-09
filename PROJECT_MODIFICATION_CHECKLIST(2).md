@@ -208,16 +208,16 @@ C++ Runtime
 
 ## 1.4 Skeleton 压力测试
 
-- [ ] create/destroy × 10
-- [ ] create/destroy × 100
-- [ ] 无 crash
-- [ ] 无 double free
-- [ ] 无明显持续内存上涨
+- [x] create/destroy × 10
+- [x] create/destroy × 100
+- [x] 无 crash
+- [x] 无 double free
+- [x] 无明显持续内存上涨
 
 ## Phase 1 Exit Criteria
 
-- [ ] Rust 可稳定 create Native Runtime
-- [ ] Rust 可稳定 destroy Native Runtime
+- [x] Rust 可稳定 create Native Runtime
+- [x] Rust 可稳定 destroy Native Runtime
 - [x] Debug Build 通过
 - [x] Release Build 通过
 - [x] FFI 所有权清晰

@@ -53,3 +53,7 @@ cargo-clippy = []
 [[example]]
 name = "native_smoke"
 required-features = ["native-runtime"]
+
+[[example]]
+name = "native_stress"
+required-features = ["native-runtime"]

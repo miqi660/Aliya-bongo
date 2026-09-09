@@ -250,7 +250,7 @@ docs/performance/phase-00-baseline.md
 
 # 4. Phase 1 — Native Runtime Skeleton
 
-进度（2026-09-09）：1.1–1.3 的构建和 ABI 已完成；Debug/Release 单次冒烟通过。按用户要求停在 1.4 压力测试前，尚未完成稳定性验收。详见 `docs/performance/phase-01-native-runtime.md`。
+进度（2026-09-09）：1.1–1.4 的构建、ABI、create/destroy 压力和短时内存趋势检查已完成；Debug/Release ×10、×100 及 Release ×20000 均通过，Phase 1 Skeleton Exit Criteria 已评估通过。详见 `docs/performance/phase-01-native-runtime.md`。
 
 ## 目标
 
@@ -278,7 +278,7 @@ C++ Native Runtime
 - [x] 明确 UTF-8 字符串
 - [x] 明确指针所有权
 - [x] create / destroy 成对
-- [ ] 连续 create / destroy 100 次
+- [x] 连续 create / destroy 100 次
 - [x] Debug Build
 - [x] Release Build
 
@@ -303,11 +303,11 @@ runtime_is_animating
 
 ## Exit Criteria
 
-- [ ] Rust 可稳定创建 Runtime
-- [ ] Rust 可稳定销毁 Runtime
+- [x] Rust 可稳定创建 Runtime
+- [x] Rust 可稳定销毁 Runtime
 - [x] Debug / Release 均可链接
-- [ ] create/destroy 压力测试无异常
-- [ ] 无明显内存持续上涨
+- [x] create/destroy 压力测试无异常
+- [x] 无明显内存持续上涨
 
 完成后生成：
 
