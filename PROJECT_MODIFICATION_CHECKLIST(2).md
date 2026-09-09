@@ -152,15 +152,15 @@ docs/performance/
 CubismSdkForNative-5-r.5
 ```
 
-- [ ] 确认 SDK 路径配置方式
-- [ ] SDK 路径不写死个人绝对路径
-- [ ] 建立 Native C++ 目录
-- [ ] 建立 C++ build 配置
-- [ ] 接入 Cubism Framework
-- [ ] 接入 Cubism Core
-- [ ] Rust `build.rs` 接入 Native library
-- [ ] Debug Build 可链接
-- [ ] Release Build 可链接
+- [x] 确认 SDK 路径配置方式
+- [x] SDK 路径不写死个人绝对路径
+- [x] 建立 Native C++ 目录
+- [x] 建立 C++ build 配置
+- [x] 接入 Cubism Framework
+- [x] 接入 Cubism Core
+- [x] Rust `build.rs` 接入 Native library
+- [x] Debug Build 可链接
+- [x] Release Build 可链接
 
 ## 1.2 FFI / Bridge
 
@@ -176,31 +176,35 @@ C ABI
 C++ Runtime
 ```
 
-- [ ] 定义 opaque Runtime Handle
-- [ ] `runtime_create`
-- [ ] `runtime_destroy`
-- [ ] 定义错误码
-- [ ] C++ exception 不跨 FFI
-- [ ] 明确 UTF-8 字符串编码
-- [ ] 明确指针所有权
-- [ ] create / destroy 成对
-- [ ] 不在 FFI 中复制大型 Texture 数据
-- [ ] Rust 不直接管理复杂 Cubism C++ 对象树
+- [x] 定义 opaque Runtime Handle
+- [x] `runtime_create`
+- [x] `runtime_destroy`
+- [x] 定义错误码
+- [x] C++ exception 不跨 FFI
+- [x] 明确 UTF-8 字符串编码
+- [x] 明确指针所有权
+- [x] create / destroy 成对
+- [x] 不在 FFI 中复制大型 Texture 数据
+- [x] Rust 不直接管理复杂 Cubism C++ 对象树
 
 ## 1.3 最小 Runtime API
 
-- [ ] `model_load`
-- [ ] `model_unload`
-- [ ] `runtime_resize`
-- [ ] `parameter_set`
-- [ ] `parameter_add`
-- [ ] `motion_start`
-- [ ] `motion_stop`
-- [ ] `expression_set`
-- [ ] `runtime_update`
-- [ ] `runtime_render`
-- [ ] `runtime_is_dirty`
-- [ ] `runtime_is_animating`
+本节勾选表示 ABI 已定义、导出并完成链接；模型/渲染操作目前返回 `ALIYA_NOT_IMPLEMENTED`，真实实现属于 Phase 2。
+
+- [x] `model_load`
+- [x] `model_unload`
+- [x] `runtime_resize`
+- [x] `parameter_set`
+- [x] `parameter_add`
+- [x] `motion_start`
+- [x] `motion_stop`
+- [x] `expression_set`
+- [x] `runtime_update`
+- [x] `runtime_render`
+- [x] `runtime_is_dirty`
+- [x] `runtime_is_animating`
+
+当前停止点（2026-09-09）：已完成 1.1–1.3 的 Skeleton 接口与构建；按用户要求在 1.4 开始前停止。详见 `docs/performance/phase-01-native-runtime.md`。
 
 ## 1.4 Skeleton 压力测试
 
@@ -214,10 +218,10 @@ C++ Runtime
 
 - [ ] Rust 可稳定 create Native Runtime
 - [ ] Rust 可稳定 destroy Native Runtime
-- [ ] Debug Build 通过
-- [ ] Release Build 通过
-- [ ] FFI 所有权清晰
-- [ ] 已生成 `phase-01-native-runtime.md`
+- [x] Debug Build 通过
+- [x] Release Build 通过
+- [x] FFI 所有权清晰
+- [x] 已生成 `phase-01-native-runtime.md`
 
 ---
 

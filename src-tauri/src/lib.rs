@@ -1,4 +1,6 @@
 mod core;
+#[cfg(feature = "native-runtime")]
+pub mod native_runtime;
 mod utils;
 
 use core::{

@@ -408,6 +408,7 @@ dependencies = [
 name = "bongo-cat"
 version = "1.1.0"
 dependencies = [
+ "cc",
  "fs_extra",
  "gilrs",
  "rdev",

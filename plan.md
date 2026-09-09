@@ -250,6 +250,8 @@ docs/performance/phase-00-baseline.md
 
 # 4. Phase 1 — Native Runtime Skeleton
 
+进度（2026-09-09）：1.1–1.3 的构建和 ABI 已完成；Debug/Release 单次冒烟通过。按用户要求停在 1.4 压力测试前，尚未完成稳定性验收。详见 `docs/performance/phase-01-native-runtime.md`。
+
 ## 目标
 
 跑通：
@@ -264,21 +266,21 @@ C++ Native Runtime
 
 ## 任务
 
-- [ ] 建立 `native/` Runtime 目录
-- [ ] 建立 C++ build
-- [ ] 接入 `CubismSdkForNative-5-r.5`
-- [ ] Rust `build.rs` 链接 Native library
-- [ ] 定义 opaque runtime handle
-- [ ] `runtime_create`
-- [ ] `runtime_destroy`
-- [ ] 定义统一错误码
-- [ ] 禁止 C++ exception 穿过 FFI
-- [ ] 明确 UTF-8 字符串
-- [ ] 明确指针所有权
-- [ ] create / destroy 成对
+- [x] 建立 `native/` Runtime 目录
+- [x] 建立 C++ build
+- [x] 接入 `CubismSdkForNative-5-r.5`
+- [x] Rust `build.rs` 链接 Native library
+- [x] 定义 opaque runtime handle
+- [x] `runtime_create`
+- [x] `runtime_destroy`
+- [x] 定义统一错误码
+- [x] 禁止 C++ exception 穿过 FFI
+- [x] 明确 UTF-8 字符串
+- [x] 明确指针所有权
+- [x] create / destroy 成对
 - [ ] 连续 create / destroy 100 次
-- [ ] Debug Build
-- [ ] Release Build
+- [x] Debug Build
+- [x] Release Build
 
 ## 推荐 FFI 最小 API
 
@@ -303,7 +305,7 @@ runtime_is_animating
 
 - [ ] Rust 可稳定创建 Runtime
 - [ ] Rust 可稳定销毁 Runtime
-- [ ] Debug / Release 均可链接
+- [x] Debug / Release 均可链接
 - [ ] create/destroy 压力测试无异常
 - [ ] 无明显内存持续上涨
 
