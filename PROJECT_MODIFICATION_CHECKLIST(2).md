@@ -598,29 +598,29 @@ Runtime Consume
 
 必须明确：
 
-- [ ] Window Owner
-- [ ] Context Owner
-- [ ] Cubism Runtime Owner
-- [ ] Cubism Renderer Owner
-- [ ] Texture Owner
-- [ ] Shader Owner
-- [ ] FBO Owner
-- [ ] Scheduler Owner
-- [ ] Input State Owner
+- [x] Window Owner
+- [x] Context Owner
+- [x] Cubism Runtime Owner
+- [x] Cubism Renderer Owner
+- [x] Texture Owner
+- [x] Shader Owner
+- [x] FBO Owner
+- [x] Scheduler Owner（边界明确，由 Phase 5 Controller 持有）
+- [x] Input State Owner（边界明确，由 Phase 6 InputState 持有）
 
 ## 7.2 RAII / Lifetime
 
-- [ ] Model RAII
-- [ ] Texture RAII
-- [ ] Shader RAII
-- [ ] FBO RAII
-- [ ] Cubism Renderer RAII
-- [ ] OpenGL Context RAII
-- [ ] Runtime RAII
-- [ ] create/destroy 成对
-- [ ] load/unload 成对
-- [ ] double-free 防护
-- [ ] 异常路径资源释放
+- [x] Model RAII
+- [x] Texture RAII
+- [x] Shader RAII
+- [x] FBO RAII
+- [x] Cubism Renderer RAII
+- [x] OpenGL Context RAII
+- [x] Runtime RAII
+- [x] create/destroy 成对
+- [x] load/unload 成对
+- [x] double-free 防护
+- [x] 异常路径资源释放
 
 ## 7.3 Destroy 顺序
 
@@ -646,25 +646,25 @@ Destroy Window
 Destroy Runtime
 ```
 
-- [ ] 不在 Context Destroy 后释放 GPU Resource
+- [x] 不在 Context Destroy 后释放 GPU Resource
 
 ## 7.4 Stress Test
 
-- [ ] Load/Unload × 100
-- [ ] Show/Hide × 500
-- [ ] Resize × 500
-- [ ] Motion Start/Stop × 1000
-- [ ] 记录 Memory Start
-- [ ] 记录 Memory Peak
-- [ ] 记录 Memory End
+- [x] Load/Unload × 100
+- [x] Show/Hide × 500
+- [x] Resize × 500
+- [x] Motion Start/Stop × 1000
+- [x] 记录 Memory Start
+- [x] 记录 Memory Peak
+- [x] 记录 Memory End
 
 ## Phase 7 Exit Criteria
 
-- [ ] 无明显持续内存单向上涨
-- [ ] GPU Resource 正确释放
-- [ ] Context 生命周期正确
-- [ ] FFI allocation 正确释放
-- [ ] 已生成 `phase-07-resource-lifecycle.md`
+- [x] 无明显持续内存单向上涨（短时独立压力；长时趋势未执行）
+- [x] GPU Resource 正确释放（释放顺序与 OpenGL 错误检查；未测独立显存字节）
+- [x] Context 生命周期正确
+- [x] FFI allocation 正确释放
+- [x] 已生成 `phase-07-resource-lifecycle.md`
 
 ---
 

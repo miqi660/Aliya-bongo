@@ -498,6 +498,146 @@ extern "C" int native_window_lifecycle_run(const char* model,
 }
 
 namespace {
+struct ResourceStressCounters {
+    unsigned load_unload = 0;
+    unsigned show_hide = 0;
+    unsigned resize = 0;
+    unsigned motion = 0;
+    uint64_t update = 0;
+    uint64_t render = 0;
+    uint64_t present = 0;
+};
+
+void resourceFrame(AliyaRuntime* runtime, ResourceStressCounters& counters) {
+    ok(runtime_update(runtime, 1.f / 60));
+    ok(runtime_render(runtime));
+    ok(runtime_present(runtime));
+    ++counters.update;
+    ++counters.render;
+    ++counters.present;
+}
+
+void resourceResize(HWND window, AliyaRuntime* runtime, int width, int height,
+    ResourceStressCounters& counters) {
+    check(SetWindowPos(window, nullptr, 0, 0, width, height,
+        SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE) != FALSE, "调整窗口尺寸失败");
+    pump();
+    RECT rect{};
+    check(GetClientRect(window, &rect) && rect.right > 0 && rect.bottom > 0,
+        "读取 Resize 后 Client 尺寸失败");
+    ok(runtime_resize(runtime, static_cast<uint32_t>(rect.right), static_cast<uint32_t>(rect.bottom)));
+    uint8_t dirty = 0;
+    ok(runtime_is_dirty(runtime, &dirty));
+    check(dirty != 0, "Resize 未设置 dirty");
+    resourceFrame(runtime, counters);
+    ++counters.resize;
+}
+}
+
+extern "C" int native_resource_lifecycle_run(const char* model,
+    unsigned load_cycles, unsigned show_hide_cycles, unsigned resize_cycles,
+    unsigned motion_cycles) noexcept {
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    try {
+        check(model && *model, "模型路径为空");
+        check(load_cycles > 0 && show_hide_cycles > 0 && resize_cycles > 0 && motion_cycles > 0,
+            "资源压力次数必须大于零");
+        if (!SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
+            check(GetLastError() == ERROR_ACCESS_DENIED, "进程 DPI 初始化失败");
+        DpiScope dpi;
+        WNDCLASSW wc{}; wc.style = CS_OWNDC; wc.lpfnWndProc = procedure;
+        wc.hInstance = GetModuleHandleW(nullptr); wc.lpszClassName = L"AliyaPhase7ResourceLifecycle";
+        if (!RegisterClassW(&wc)) check(GetLastError() == ERROR_CLASS_ALREADY_EXISTS, "窗口注册失败");
+
+        Session session;
+        session.window = CreateWindowExW(0, wc.lpszClassName, L"Aliya Native · Phase 7 Resource Lifecycle",
+            WS_OVERLAPPEDWINDOW, 120, 120, 660, 680, nullptr, nullptr, wc.hInstance, nullptr);
+        check(session.window != nullptr, "窗口创建失败");
+        lifecycleShow(session.window);
+        puts("创建 Native Window / Runtime");
+        ok(runtime_create(&session.runtime));
+        ok(runtime_attach_window(session.runtime, session.window));
+        RECT rect{};
+        check(GetClientRect(session.window, &rect) && rect.right > 0 && rect.bottom > 0,
+            "读取 Client 尺寸失败");
+        ok(runtime_resize(session.runtime, static_cast<uint32_t>(rect.right), static_cast<uint32_t>(rect.bottom)));
+        ok(model_load(session.runtime, model));
+
+        ResourceStressCounters counters;
+        resourceFrame(session.runtime, counters);
+
+        // 临时 Model 成功后才替换旧 Model；循环覆盖 Model、Renderer、Texture、Motion 和 Expression 释放。
+        for (unsigned i = 0; i < load_cycles; ++i) {
+            ok(model_unload(session.runtime));
+            ok(model_load(session.runtime, model));
+            resourceFrame(session.runtime, counters);
+            ++counters.load_unload;
+        }
+
+        lifecycleShow(session.window);
+        for (unsigned i = 0; i < resize_cycles; ++i) {
+            const int width = 640 + static_cast<int>(i % 11) * 19;
+            const int height = 520 + static_cast<int>(i % 13) * 11;
+            resourceResize(session.window, session.runtime, width, height, counters);
+        }
+
+        lifecycleShow(session.window);
+        for (unsigned i = 0; i < motion_cycles; ++i) {
+            ok(motion_start(session.runtime, "CAT_motion", 0));
+            uint8_t animating = 0;
+            ok(runtime_is_animating(session.runtime, &animating));
+            check(animating != 0, "Motion Start 后未进入 animating");
+            resourceFrame(session.runtime, counters);
+            ok(motion_stop(session.runtime));
+            ok(runtime_is_animating(session.runtime, &animating));
+            check(animating == 0, "Motion Stop 后仍处于 animating");
+            ++counters.motion;
+        }
+
+        for (unsigned i = 0; i < show_hide_cycles; ++i) {
+            lifecycleShow(session.window);
+            resourceFrame(session.runtime, counters);
+            const auto rendered = counters.render;
+            lifecycleHide(session.window);
+            pump(); pump();
+            check(!IsWindowVisible(session.window), "隐藏循环中窗口重新可见");
+            check(counters.render == rendered && counters.present == rendered,
+                "Show/Hide 隐藏段提交了额外 Native 帧");
+            ++counters.show_hide;
+        }
+
+        // 显式 double-unload、Render-after-unload 和 double-destroy，验证释放 API 的幂等边界。
+        ok(model_unload(session.runtime));
+        ok(model_unload(session.runtime));
+        check(runtime_update(session.runtime, 0) == ALIYA_INVALID_STATE,
+            "最终 Unload 后 Update 未拒绝");
+        ok(runtime_render(session.runtime));
+        ok(runtime_present(session.runtime));
+        ok(runtime_destroy(&session.runtime));
+        ok(runtime_destroy(&session.runtime));
+        check(wglGetCurrentContext() == nullptr, "Runtime Destroy 后仍保留 current Context");
+        const HWND destroyedWindow = session.window;
+        check(DestroyWindow(destroyedWindow) != FALSE, "窗口销毁失败");
+        session.window = nullptr;
+        check(!IsWindow(destroyedWindow), "窗口句柄仍有效");
+        UnregisterClassW(wc.lpszClassName, wc.hInstance);
+
+        printf("Phase 7 压力: load/unload=%u, show/hide=%u, resize=%u, motion=%u\n",
+            counters.load_unload, counters.show_hide, counters.resize, counters.motion);
+        printf("Phase 7 帧: Update=%llu, Render=%llu, Present=%llu\n",
+            static_cast<unsigned long long>(counters.update),
+            static_cast<unsigned long long>(counters.render),
+            static_cast<unsigned long long>(counters.present));
+        puts("Phase 7 Native Resource Lifecycle 验收通过");
+        // 给外部采样器一个 post-destroy 窗口，避免进程退出太快而错过最终内存值。
+        Sleep(500);
+        return 0;
+    } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
+    catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }
+}
+
+namespace {
 struct DirtySleepWaiter {
     std::future<aliya::WaitResult> result;
     std::thread thread;

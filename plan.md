@@ -689,19 +689,21 @@ docs/performance/phase-06-input-state.md
 
 # 10. Phase 7 — Resource Lifecycle
 
+进度（2026-09-10）：Native/OpenGL/Cubism 资源 Owner、释放顺序和独立压力验收已完成。`Load/Unload×100`、`Show/Hide×500`、`Resize×500`、`Motion Start/Stop×1000` 的 Debug/Release 验收通过；三次独立 Release 采样的 post-destroy 内存结束值稳定。本阶段只覆盖短时独立 Native example，不进入 Phase 8，也不宣称已接入 Tauri 生产 Native Render Loop。详见 `docs/performance/phase-07-resource-lifecycle.md`。
+
 ## 目标
 
 消除 Native / OpenGL / Cubism 长时间资源泄漏。
 
 ## Owner 必须明确
 
-- [ ] Window Owner
-- [ ] Context Owner
-- [ ] Cubism Runtime Owner
-- [ ] Renderer Owner
-- [ ] Texture Owner
-- [ ] Scheduler Owner
-- [ ] Input State Owner
+- [x] Window Owner
+- [x] Context Owner
+- [x] Cubism Runtime Owner
+- [x] Renderer Owner
+- [x] Texture Owner
+- [x] Scheduler Owner（边界明确，由 Phase 5 Controller 持有）
+- [x] Input State Owner（边界明确，由 Phase 6 InputState 持有）
 
 ## 推荐释放顺序
 
@@ -727,25 +729,27 @@ Destroy Runtime
 
 ## 任务
 
-- [ ] Model RAII
-- [ ] Texture RAII
-- [ ] Shader RAII
-- [ ] FBO RAII
-- [ ] Cubism Renderer RAII
-- [ ] Context RAII
-- [ ] Runtime RAII
-- [ ] create/destroy 成对
-- [ ] load/unload 成对
-- [ ] double free 防护
-- [ ] destroy-after-context 防护
-- [ ] 异常路径释放
+- [x] Model RAII
+- [x] Texture RAII
+- [x] Shader RAII
+- [x] FBO RAII
+- [x] Cubism Renderer RAII
+- [x] Context RAII
+- [x] Runtime RAII
+- [x] create/destroy 成对
+- [x] load/unload 成对
+- [x] double free 防护
+- [x] destroy-after-context 防护
+- [x] 异常路径释放
 
 ## Stress Test
 
-- [ ] Load/Unload × 100
-- [ ] Show/Hide × 500
-- [ ] Resize × 500
-- [ ] Motion Start/Stop × 1000
+- [x] Load/Unload × 100
+- [x] Show/Hide × 500
+- [x] Resize × 500
+- [x] Motion Start/Stop × 1000
+
+- [x] 已记录 Memory Start / Peak / End（详见阶段报告）
 
 记录：
 
@@ -757,16 +761,18 @@ Memory End
 
 ## Exit Criteria
 
-- [ ] 无明显持续内存单向上涨
-- [ ] Context 销毁顺序正确
-- [ ] GPU Resource 正确释放
-- [ ] FFI allocation 正确释放
+- [x] 无明显持续内存单向上涨（短时独立压力；长时趋势未执行）
+- [x] Context 销毁顺序正确
+- [x] GPU Resource 正确释放（顺序与 OpenGL 错误检查；未测独立显存字节）
+- [x] FFI allocation 正确释放
 
 完成后生成：
 
 ```text
 docs/performance/phase-07-resource-lifecycle.md
 ```
+
+- [x] 已生成 `phase-07-resource-lifecycle.md`
 
 ---
 

@@ -66,8 +66,13 @@ struct Model final : CubismUserModel {
     std::vector<GLuint> textures;
     std::map<std::pair<std::string, uint32_t>, MotionPtr> motions;
     std::map<std::string, MotionPtr> expressions;
+    Model() = default;
+    Model(const Model&) = delete;
+    Model& operator=(const Model&) = delete;
     ~Model() {
-        _motionManager->StopAllMotions(); _expressionManager->StopAllMotions();
+        // Model/Renderer/Texture 都依赖当前 OpenGL Context；Runtime 析构前必须保持 current。
+        if (_motionManager) _motionManager->StopAllMotions();
+        if (_expressionManager) _expressionManager->StopAllMotions();
         DeleteRenderer();
         if (!textures.empty()) glDeleteTextures(static_cast<GLsizei>(textures.size()), textures.data());
     }
@@ -177,6 +182,11 @@ struct Model final : CubismUserModel {
 };
 }
 struct AliyaRuntime {
+    AliyaRuntime() = default;
+    AliyaRuntime(const AliyaRuntime&) = delete;
+    AliyaRuntime& operator=(const AliyaRuntime&) = delete;
+    AliyaRuntime(AliyaRuntime&&) = delete;
+    AliyaRuntime& operator=(AliyaRuntime&&) = delete;
     std::thread::id owner = std::this_thread::get_id();
     HWND window = nullptr; HDC dc = nullptr; HGLRC context = nullptr;
     // SDK 借用 Option 指针，必须保持到 CleanUp 完成。
