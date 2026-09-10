@@ -68,6 +68,25 @@ void RenderScheduler::transitionForElapsed(Clock::time_point now) {
     transitionTo(desired, now);
 }
 
+RenderScheduler::Clock::time_point RenderScheduler::nextDeadline(Clock::time_point now) const {
+    if (!initialized_ || state_ == SchedulerState::Sleep) return Clock::time_point::max();
+    auto deadline = next_frame_;
+    switch (state_) {
+    case SchedulerState::Active:
+        deadline = std::min(deadline, last_activity_ + config_.idle_after);
+        break;
+    case SchedulerState::Idle:
+        deadline = std::min(deadline, last_activity_ + config_.deep_idle_after);
+        break;
+    case SchedulerState::DeepIdle:
+        deadline = std::min(deadline, last_activity_ + config_.sleep_after);
+        break;
+    case SchedulerState::Sleep:
+        break;
+    }
+    return deadline < now ? now : deadline;
+}
+
 void RenderScheduler::wake(Clock::time_point now) {
     if (!initialized_) reset(now);
     ++counters_.wakeup_count;

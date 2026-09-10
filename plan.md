@@ -516,18 +516,20 @@ docs/performance/phase-04-render-scheduler.md
 
 # 8. Phase 5 — Dirty Rendering + 0 FPS Sleep
 
+进度（2026-09-10）：Dirty flag、Native Runtime 现有 dirty 来源、条件变量阻塞等待和独立线程验收已完成。键盘、鼠标按键与 MouseMove 仍留在 Phase 6；当前没有把 Native Runtime 接入 Tauri 生产 Render Loop。详见 `docs/performance/phase-05-dirty-sleep.md`。
+
 ## 目标
 
 没有变化就不 Render，完全静止时真正阻塞等待。
 
 ## Dirty 来源
 
-- [ ] Parameter changed
-- [ ] Motion advanced
-- [ ] Expression changed
-- [ ] Resize
-- [ ] Model Load
-- [ ] Visibility changed
+- [x] Parameter changed
+- [x] Motion advanced
+- [x] Expression changed
+- [x] Resize
+- [x] Model Load
+- [x] Visibility changed
 
 逻辑：
 
@@ -557,22 +559,22 @@ Present = 0
 
 ## 任务
 
-- [ ] dirty flag
-- [ ] `runtime_is_dirty`
-- [ ] `runtime_is_animating`
-- [ ] Render 后 clear dirty
-- [ ] condition_variable / event / wait handle
+- [x] dirty flag
+- [x] `runtime_is_dirty`
+- [x] `runtime_is_animating`
+- [x] Render 后 clear dirty
+- [x] condition_variable / event / wait handle
 - [ ] Keyboard Wake
 - [ ] Mouse Button Wake
 - [ ] Mouse Move Wake
-- [ ] Motion Wake
-- [ ] Resize Wake
-- [ ] Show Wake
-- [ ] Shutdown Wake
-- [ ] 删除 polling sleep loop
-- [ ] sleep_enter_count
-- [ ] sleep_exit_count
-- [ ] Wake latency 测试
+- [x] Motion Wake
+- [x] Resize Wake
+- [x] Show Wake
+- [x] Shutdown Wake
+- [x] 删除 polling sleep loop
+- [x] sleep_enter_count
+- [x] sleep_exit_count
+- [x] Wake latency 测试
 
 ## Exit Criteria
 
@@ -584,9 +586,9 @@ Render  = 0
 Present = 0
 ```
 
-- [ ] Scheduler 真正阻塞等待
-- [ ] 输入可正常 Wake
-- [ ] Wake 后状态正确
+- [x] Scheduler 真正阻塞等待
+- [x] 非输入 dirty 来源可正常 Wake；键鼠输入留 Phase 6
+- [x] Wake 后状态正确
 
 完成后生成：
 

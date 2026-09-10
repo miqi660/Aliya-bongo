@@ -43,6 +43,7 @@ public:
     void reset(Clock::time_point now);
     void wake(Clock::time_point now);
     SchedulerTick tick(Clock::time_point now, bool animating);
+    Clock::time_point nextDeadline(Clock::time_point now) const;
     void setActiveFps(double fps);
 
     SchedulerState state() const { return state_; }

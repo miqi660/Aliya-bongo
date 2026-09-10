@@ -69,3 +69,7 @@ required-features = ["native-runtime"]
 [[example]]
 name = "native_scheduler"
 required-features = ["native-runtime"]
+
+[[example]]
+name = "native_dirty_sleep"
+required-features = ["native-runtime"]

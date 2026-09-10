@@ -1,6 +1,7 @@
 // Phase 2 专用验收驱动：只在 example 调用，生产 Runtime 不调用读回或测试窗口。
 #include "runtime.h"
 #include "scheduler.h"
+#include "dirty_sleep.h"
 #include <GL/glew.h>
 #include <windows.h>
 #include <dwmapi.h>
@@ -11,6 +12,7 @@
 #include <string>
 #include <algorithm>
 #include <thread>
+#include <future>
 #include <limits>
 #include <cmath>
 #include <cstdio>
@@ -489,6 +491,133 @@ extern "C" int native_window_lifecycle_run(const char* model,
         check(!IsWindow(destroyedWindow), "窗口句柄仍有效");
         UnregisterClassW(wc.lpszClassName, wc.hInstance);
         puts("Phase 3 Native Window Lifecycle 验收通过");
+        return 0;
+    } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
+    catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }
+}
+
+namespace {
+struct DirtySleepWaiter {
+    std::future<aliya::WaitResult> result;
+    std::thread thread;
+};
+
+DirtySleepWaiter beginDirtySleepWait(aliya::DirtySleepController& controller) {
+    std::promise<aliya::WaitResult> promise;
+    auto result = promise.get_future();
+    std::thread thread([&controller, promise = std::move(promise)]() mutable {
+        promise.set_value(controller.waitForFrame());
+    });
+    return {std::move(result), std::move(thread)};
+}
+
+void finishFrame(DirtySleepWaiter& waiter, const char* message) {
+    check(waiter.result.wait_for(std::chrono::milliseconds(250)) == std::future_status::ready,
+        message);
+    check(waiter.result.get() == aliya::WaitResult::Frame, "Dirty 唤醒未返回 Frame");
+    waiter.thread.join();
+}
+
+struct DirtySleepReport {
+    aliya::DirtySleepCounters counters{};
+    uint64_t presented_frames = 0;
+    uint64_t static_frames = 0;
+};
+
+DirtySleepReport runDirtySleepScenario() {
+    aliya::SchedulerConfig config;
+    config.active_fps = 60;
+    config.idle_fps = 10;
+    config.deep_idle_fps = 5;
+    // 验收缩短状态超时，避免为进入 SLEEP 引入数秒等待；生产默认值仍由 SchedulerConfig 提供。
+    config.idle_after = std::chrono::milliseconds(20);
+    config.deep_idle_after = std::chrono::milliseconds(40);
+    config.sleep_after = std::chrono::milliseconds(70);
+    aliya::DirtySleepController controller(config);
+
+    check(controller.waitForFrame() == aliya::WaitResult::Frame, "初始 dirty 未提交 Frame");
+    controller.framePresented();
+    check(!controller.dirty(), "Frame Presented 后 dirty 未清除");
+    const auto initial = controller.counters().frame_count;
+
+    auto staticWait = beginDirtySleepWait(controller);
+    for (int i = 0; i < 150 && !controller.sleeping(); ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    check(controller.sleeping(), "静态状态未进入条件变量 Sleep");
+    check(staticWait.result.wait_for(std::chrono::milliseconds(40)) == std::future_status::timeout,
+        "静态 Sleep 仍提交 Update/Render/Present");
+    const auto staticFrames = controller.counters().frame_count;
+    check(staticFrames == initial, "静态 Sleep 增加了 frame_count");
+
+    const std::pair<const char*, aliya::DirtySource> sources[] = {
+        {"Parameter changed", aliya::DirtySource::ParameterChanged},
+        {"Motion advanced", aliya::DirtySource::MotionAdvanced},
+        {"Expression changed", aliya::DirtySource::ExpressionChanged},
+        {"Resize", aliya::DirtySource::Resize},
+        {"Model Load", aliya::DirtySource::ModelLoad},
+    };
+    for (const auto& [name, source] : sources) {
+        controller.markDirty(source);
+        finishFrame(staticWait, (std::string("Dirty source 未唤醒: ") + name).c_str());
+        controller.framePresented();
+        check(!controller.dirty(), "Dirty source Frame 后 dirty 未清除");
+        staticWait = beginDirtySleepWait(controller);
+    }
+
+    controller.setVisible(false);
+    check(controller.dirty(), "Visibility changed 未设置 dirty");
+    auto hiddenWait = std::move(staticWait);
+    check(hiddenWait.result.wait_for(std::chrono::milliseconds(40)) == std::future_status::timeout,
+        "隐藏状态错误地提交了 Frame");
+    const auto hiddenFrames = controller.counters().frame_count;
+    controller.setVisible(true);
+    finishFrame(hiddenWait, "Show 未唤醒 Dirty Sleep");
+    controller.framePresented();
+    check(controller.counters().frame_count == hiddenFrames + 1, "Show 未只提交一帧");
+
+    controller.setAnimating(true);
+    auto animationWait = beginDirtySleepWait(controller);
+    finishFrame(animationWait, "Animating 未唤醒 Render Scheduler");
+    controller.framePresented();
+    controller.setAnimating(false);
+
+    auto shutdownWait = beginDirtySleepWait(controller);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    controller.shutdown();
+    check(shutdownWait.result.wait_for(std::chrono::milliseconds(250)) == std::future_status::ready,
+        "Shutdown 未唤醒阻塞线程");
+    check(shutdownWait.result.get() == aliya::WaitResult::Shutdown, "Shutdown 返回值错误");
+    shutdownWait.thread.join();
+
+    DirtySleepReport report;
+    report.counters = controller.counters();
+    report.presented_frames = report.counters.frame_count;
+    report.static_frames = staticFrames;
+    check(report.counters.dirty_event_count >= 7, "Dirty 来源计数不完整");
+    check(report.counters.sleep_enter_count >= 1 && report.counters.sleep_exit_count >= 1,
+        "Sleep enter/exit 未记录");
+    check(report.counters.wakeup_count >= 8, "Wake source 未触发 Scheduler wake");
+    return report;
+}
+}
+
+extern "C" int native_dirty_sleep_run(unsigned repeats) noexcept {
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    try {
+        check(repeats > 0, "Dirty Sleep 重复次数必须大于零");
+        DirtySleepReport report;
+        for (unsigned i = 0; i < repeats; ++i) report = runDirtySleepScenario();
+        printf("Phase 5 静态帧: before=%llu, after=%llu；Wake latency=%llu us\n",
+            static_cast<unsigned long long>(report.static_frames),
+            static_cast<unsigned long long>(report.presented_frames),
+            static_cast<unsigned long long>(report.counters.last_wake_latency_us));
+        printf("Phase 5 Sleep: enter=%llu, exit=%llu, wakeups=%llu, dirty_events=%llu\n",
+            static_cast<unsigned long long>(report.counters.sleep_enter_count),
+            static_cast<unsigned long long>(report.counters.sleep_exit_count),
+            static_cast<unsigned long long>(report.counters.wakeup_count),
+            static_cast<unsigned long long>(report.counters.dirty_event_count));
+        puts("Phase 5 Dirty Rendering + 0 FPS Sleep 验收通过");
         return 0;
     } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
     catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }

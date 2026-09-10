@@ -427,16 +427,18 @@ Present = 60 FPS
 
 # Phase 5 — Dirty Rendering + 0 FPS Sleep
 
+进度（2026-09-10）：已完成 Native DirtySleepController、条件变量阻塞、dirty/visibility/animation/shutdown 验收。键盘、鼠标按键和 MouseMove 仍由 Phase 6 实现；未宣称已接入 Tauri 生产 Render Loop。详见 `docs/performance/phase-05-dirty-sleep.md`。
+
 ## 5.1 Dirty State
 
 Dirty 来源：
 
-- [ ] Parameter changed
-- [ ] Motion advanced
-- [ ] Expression changed
-- [ ] Resize
-- [ ] Model Load
-- [ ] Visibility changed
+- [x] Parameter changed
+- [x] Motion advanced
+- [x] Expression changed
+- [x] Resize
+- [x] Model Load
+- [x] Visibility changed
 
 逻辑：
 
@@ -448,10 +450,10 @@ Render
 dirty = false
 ```
 
-- [ ] `runtime_is_dirty`
-- [ ] `runtime_is_animating`
-- [ ] Render 后 clear dirty
-- [ ] `dirty == false && !animating` 时可降级状态
+- [x] `runtime_is_dirty`
+- [x] `runtime_is_animating`
+- [x] Render 后 clear dirty
+- [x] `dirty == false && !animating` 时可降级状态
 
 ## 5.2 SLEEP
 
@@ -463,41 +465,41 @@ Render  = 0
 Present = 0
 ```
 
-- [ ] condition_variable / event / wait handle
-- [ ] 禁止 1ms polling
-- [ ] 禁止 5ms polling
-- [ ] 禁止 10ms polling
-- [ ] Render Thread 真正阻塞
+- [x] condition_variable / event / wait handle
+- [x] 禁止 1ms polling
+- [x] 禁止 5ms polling
+- [x] 禁止 10ms polling
+- [x] Render Thread 真正阻塞
 
 ## 5.3 Wake Sources
 
 - [ ] Keyboard
 - [ ] Mouse Button
 - [ ] Mouse Move
-- [ ] Motion
-- [ ] Expression
-- [ ] Resize
-- [ ] Show
-- [ ] Shutdown
+- [x] Motion
+- [x] Expression
+- [x] Resize
+- [x] Show
+- [x] Shutdown
 
 ## 5.4 Sleep Instrumentation
 
-- [ ] sleep_enter_count
-- [ ] sleep_exit_count
-- [ ] Wake latency
-- [ ] Static wakeups/s
+- [x] sleep_enter_count
+- [x] sleep_exit_count
+- [x] Wake latency
+- [x] Static wakeups/s
 
 ## Phase 5 Exit Criteria
 
 Static 状态：
 
-- [ ] Update = 0
-- [ ] Render = 0
-- [ ] Present = 0
-- [ ] Scheduler Blocking Wait
-- [ ] 输入可以 Wake
-- [ ] Wake 后状态正确
-- [ ] 已生成 `phase-05-dirty-sleep.md`
+- [x] Update = 0
+- [x] Render = 0
+- [x] Present = 0
+- [x] Scheduler Blocking Wait
+- [x] 非输入 dirty 来源可以 Wake；键鼠输入留 Phase 6
+- [x] Wake 后状态正确
+- [x] 已生成 `phase-05-dirty-sleep.md`
 
 ---
 
