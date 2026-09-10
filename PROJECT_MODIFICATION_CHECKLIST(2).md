@@ -304,52 +304,52 @@ C++ Runtime
 
 ## 3.1 Window Lifecycle
 
-- [ ] Create
-- [ ] Show
-- [ ] Hide
-- [ ] Move
-- [ ] Resize
-- [ ] Destroy
+- [x] Create
+- [x] Show
+- [x] Hide
+- [x] Move
+- [x] Resize
+- [x] Destroy
 
 ## 3.2 Window → Runtime 联动
 
-- [ ] Show → Wake Runtime
-- [ ] Resize → Update Viewport
-- [ ] Resize → `dirty = true`
-- [ ] Hide → Stop Update
-- [ ] Hide → Stop Render
-- [ ] Hide → Stop Present
+- [x] Show → Wake Runtime
+- [x] Resize → Update Viewport
+- [x] Resize → `dirty = true`
+- [x] Hide → Stop Update
+- [x] Hide → Stop Render
+- [x] Hide → Stop Present
 - [ ] Destroy → Stop Scheduler
-- [ ] Destroy → Stop Render
-- [ ] Destroy → Release Cubism Renderer
-- [ ] Destroy → Release OpenGL Resources
-- [ ] Destroy → Release Context
+- [x] Destroy → Stop Render
+- [x] Destroy → Release Cubism Renderer
+- [x] Destroy → Release OpenGL Resources
+- [x] Destroy → Release Context
 
 ## 3.3 Resize 压力测试
 
 `CubismSdkForNative-5-r.5` 路线中 Resize 属于重点回归项。
 
-- [ ] Resize × 100
-- [ ] Resize × 500
-- [ ] 记录 Memory Before
-- [ ] 记录 Memory Peak
-- [ ] 记录 Memory After
+- [x] Resize × 100
+- [x] Resize × 500
+- [x] 记录 Memory Before
+- [x] 记录 Memory Peak
+- [x] 记录 Memory After
 - [ ] 检查 GPU Resource 是否持续增长
 - [ ] 检查 Framebuffer 是否持续重建泄漏
 
 ## 3.4 Show/Hide 压力测试
 
-- [ ] Show/Hide × 100
-- [ ] Hidden 后确认 Render 停止
-- [ ] Hidden 后确认 Present 停止
-- [ ] Re-show 后恢复正常
+- [x] Show/Hide × 100
+- [x] Hidden 后确认 Render 停止
+- [x] Hidden 后确认 Present 停止
+- [x] Re-show 后恢复正常
 
 ## Phase 3 Exit Criteria
 
-- [ ] Create/Show/Hide/Resize/Destroy 稳定
-- [ ] Resize 无明显持续内存增长
-- [ ] Hidden 不继续 Native Render
-- [ ] 已生成 `phase-03-window-lifecycle.md`
+- [x] Create/Show/Hide/Resize/Destroy 稳定
+- [x] Resize 无明显持续内存增长
+- [x] Hidden 不继续 Native Render
+- [x] 已生成 `phase-03-window-lifecycle.md`
 
 ---
 

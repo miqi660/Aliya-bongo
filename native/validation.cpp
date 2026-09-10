@@ -206,3 +206,128 @@ extern "C" int native_validation_run(const char* model, const char* output, unsi
     } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
     catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }
 }
+
+namespace {
+struct LifecycleCounters {
+    unsigned update = 0;
+    unsigned render = 0;
+    unsigned present = 0;
+};
+
+void lifecycleShow(HWND window) {
+    ShowWindow(window, SW_SHOW);
+    // 隐藏控制台启动时第一次 ShowWindow 可能受启动参数影响，显式要求显示。
+    check(SetWindowPos(window, nullptr, 0, 0, 0, 0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW) != FALSE,
+        "显示窗口失败");
+    UpdateWindow(window);
+    pump();
+    check(IsWindowVisible(window), "窗口未进入可见状态");
+}
+
+void lifecycleHide(HWND window) {
+    ShowWindow(window, SW_HIDE);
+    pump();
+    check(!IsWindowVisible(window), "窗口未进入隐藏状态");
+}
+
+void lifecycleTick(AliyaRuntime* runtime, LifecycleCounters& counters) {
+    ok(runtime_update(runtime, 1.f / 60)); ++counters.update;
+    ok(runtime_render(runtime)); ++counters.render;
+    ok(runtime_present(runtime)); ++counters.present;
+}
+
+void lifecycleResize(HWND window, AliyaRuntime* runtime, int width, int height,
+    LifecycleCounters& counters) {
+    check(SetWindowPos(window, nullptr, 0, 0, width, height,
+        SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE) != FALSE, "调整窗口尺寸失败");
+    pump();
+    RECT client{};
+    check(GetClientRect(window, &client) && client.right > 0 && client.bottom > 0,
+        "读取 Client 尺寸失败");
+    ok(runtime_resize(runtime, static_cast<uint32_t>(client.right), static_cast<uint32_t>(client.bottom)));
+    uint8_t dirty = 0;
+    ok(runtime_is_dirty(runtime, &dirty));
+    check(dirty != 0, "Resize 未设置 dirty");
+    lifecycleTick(runtime, counters);
+}
+}
+
+extern "C" int native_window_lifecycle_run(const char* model,
+    unsigned resize_cycles, unsigned visibility_cycles) noexcept {
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    try {
+        check(model && *model, "模型路径为空");
+        check(resize_cycles > 0 && visibility_cycles > 0, "压力次数必须大于零");
+        if (!SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
+            check(GetLastError() == ERROR_ACCESS_DENIED, "进程 DPI 初始化失败");
+        DpiScope dpi;
+        WNDCLASSW wc{}; wc.style = CS_OWNDC; wc.lpfnWndProc = procedure;
+        wc.hInstance = GetModuleHandleW(nullptr); wc.lpszClassName = L"AliyaPhase3Lifecycle";
+        if (!RegisterClassW(&wc)) check(GetLastError() == ERROR_CLASS_ALREADY_EXISTS, "窗口注册失败");
+
+        Session session;
+        session.window = CreateWindowExW(0, wc.lpszClassName, L"Aliya Native · Phase 3 Lifecycle",
+            WS_OVERLAPPEDWINDOW, 120, 120, 660, 680, nullptr, nullptr, wc.hInstance, nullptr);
+        check(session.window != nullptr, "窗口创建失败");
+        lifecycleShow(session.window);
+        puts("创建 Native Window / Runtime");
+        ok(runtime_create(&session.runtime));
+        ok(runtime_attach_window(session.runtime, session.window));
+        RECT client{};
+        check(GetClientRect(session.window, &client), "读取初始 Client 尺寸失败");
+        ok(runtime_resize(session.runtime, static_cast<uint32_t>(client.right), static_cast<uint32_t>(client.bottom)));
+        ok(model_load(session.runtime, model));
+
+        LifecycleCounters counters;
+        lifecycleTick(session.runtime, counters);
+        const auto framesBeforeHide = counters.render;
+        lifecycleHide(session.window);
+        for (int i = 0; i < 10; ++i) { pump(); check(!IsWindowVisible(session.window), "隐藏窗口重新变为可见"); }
+        check(counters.update == framesBeforeHide && counters.render == framesBeforeHide
+            && counters.present == framesBeforeHide, "Hidden 仍提交 Native 帧");
+        lifecycleShow(session.window);
+        lifecycleTick(session.runtime, counters);
+        check(counters.render > framesBeforeHide, "Show 未恢复 Native 渲染");
+
+        RECT beforeMove{}, afterMove{};
+        check(GetWindowRect(session.window, &beforeMove), "读取移动前位置失败");
+        check(SetWindowPos(session.window, nullptr, beforeMove.left + 24, beforeMove.top + 18,
+            0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE) != FALSE, "移动窗口失败");
+        pump();
+        check(GetWindowRect(session.window, &afterMove)
+            && (afterMove.left != beforeMove.left || afterMove.top != beforeMove.top),
+            "窗口位置未改变");
+
+        for (unsigned i = 0; i < resize_cycles; ++i) {
+            const int width = 640 + static_cast<int>(i % 9) * 17;
+            const int height = 520 + static_cast<int>(i % 7) * 13;
+            lifecycleResize(session.window, session.runtime, width, height, counters);
+        }
+        for (unsigned i = 0; i < visibility_cycles; ++i) {
+            lifecycleShow(session.window);
+            lifecycleTick(session.runtime, counters);
+            const auto beforeHidden = counters.render;
+            lifecycleHide(session.window);
+            pump(); pump();
+            check(counters.update == beforeHidden && counters.render == beforeHidden
+                && counters.present == beforeHidden, "Show/Hide 隐藏段提交了 Native 帧");
+        }
+
+        printf("Phase 3 计数: resize=%u, show/hide=%u, update=%u, render=%u, present=%u\n",
+            resize_cycles, visibility_cycles, counters.update, counters.render, counters.present);
+        ok(model_unload(session.runtime));
+        ok(runtime_destroy(&session.runtime));
+        ok(runtime_destroy(&session.runtime));
+        check(wglGetCurrentContext() == nullptr, "Runtime 销毁后仍保留 current Context");
+        const HWND destroyedWindow = session.window;
+        check(DestroyWindow(destroyedWindow) != FALSE, "窗口销毁失败");
+        session.window = nullptr;
+        check(!IsWindow(destroyedWindow), "窗口句柄仍有效");
+        UnregisterClassW(wc.lpszClassName, wc.hInstance);
+        puts("Phase 3 Native Window Lifecycle 验收通过");
+        return 0;
+    } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
+    catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }
+}

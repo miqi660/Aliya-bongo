@@ -61,3 +61,7 @@ required-features = ["native-runtime"]
 [[example]]
 name = "native_opengl"
 required-features = ["native-runtime"]
+
+[[example]]
+name = "native_window_lifecycle"
+required-features = ["native-runtime"]

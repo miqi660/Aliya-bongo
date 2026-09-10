@@ -402,37 +402,37 @@ Destroy → Stop Scheduler → Release Cubism → Release OpenGL → Release Con
 
 ## 任务
 
-- [ ] Window Create
-- [ ] Show
-- [ ] Hide
-- [ ] Move
-- [ ] Resize
-- [ ] Destroy
-- [ ] Show → Wake
-- [ ] Resize → dirty
-- [ ] Resize → viewport update
-- [ ] Hide → stop Update
-- [ ] Hide → stop Render
-- [ ] Hide → stop Present
+- [x] Window Create
+- [x] Show
+- [x] Hide
+- [x] Move
+- [x] Resize
+- [x] Destroy
+- [x] Show → Wake
+- [x] Resize → dirty
+- [x] Resize → viewport update
+- [x] Hide → stop Update
+- [x] Hide → stop Render
+- [x] Hide → stop Present
 - [ ] Destroy → stop Scheduler
-- [ ] Destroy → release Renderer
-- [ ] Destroy → release OpenGL Resources
-- [ ] Destroy → release Context
+- [x] Destroy → release Renderer
+- [x] Destroy → release OpenGL Resources
+- [x] Destroy → release Context
 
 ## Stress Test
 
-- [ ] Show/Hide × 100
-- [ ] Resize × 100
-- [ ] Resize × 500
-- [ ] 记录 Memory Before/After
+- [x] Show/Hide × 100
+- [x] Resize × 100
+- [x] Resize × 500
+- [x] 记录 Memory Before/After
 
 ## Exit Criteria
 
-- [ ] Show/Hide 稳定
-- [ ] Resize 稳定
-- [ ] Destroy 稳定
-- [ ] Resize 无明显持续内存增长
-- [ ] Hidden 不继续 Native Render
+- [x] Show/Hide 稳定
+- [x] Resize 稳定
+- [x] Destroy 稳定
+- [x] Resize 无明显持续内存增长
+- [x] Hidden 不继续 Native Render
 
 完成后生成：
 
