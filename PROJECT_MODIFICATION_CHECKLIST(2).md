@@ -734,7 +734,7 @@ Destroy Runtime
 
 必须尽量保持：
 
-- [ ] 同一机器
+- [x] 同一机器
 - [ ] 同一 Windows 电源模式
 - [ ] 同一测试模型
 - [ ] 同一窗口尺寸
@@ -794,12 +794,12 @@ performance/
 
 ## Phase 9 Exit Criteria
 
-- [ ] Before 数据完整
-- [ ] After 数据完整
-- [ ] 环境一致
-- [ ] 比较结果完整
-- [ ] Known Issues 完整
-- [ ] 已生成 `phase-09-performance-regression.md`
+- [ ] Before 数据完整（Phase 0 缺少应用计数、GPU、Motion/Expression、Hidden、长时场景）
+- [ ] After 数据完整（当前仅独立 Native policy，不是生产 Render Loop）
+- [ ] 环境一致（Power mode、DPI、窗口尺寸、polling rate 未完全确认）
+- [ ] 比较结果完整（当前只能给出 PARTIAL，不计算提升百分比）
+- [x] Known Issues 完整
+- [x] 已生成 `phase-09-performance-regression.md`
 
 ---
 

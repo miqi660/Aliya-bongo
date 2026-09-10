@@ -849,13 +849,15 @@ docs/performance/phase-08-instrumentation.md
 
 # 12. Phase 9 — Before / After 性能回归
 
+进度（2026-09-10）：已整理 Phase 0 Web Runtime Before 与 Phase 8 Native policy After，并生成可比性报告。由于 Tauri 生产 Native Render Loop 尚未接入，两组数据的进程拓扑、计数口径和场景不一致；本阶段保持 PARTIAL，不计算性能提升百分比，也不进入 Phase 10。详见 `docs/performance/phase-09-performance-regression.md`。
+
 ## 目标
 
 使用与 Phase 0 相同环境重新执行完整 Benchmark。
 
 ## 必须保持一致
 
-- [ ] 同一机器
+- [x] 同一机器（Phase 0 与当前运行环境一致）
 - [ ] 同一 Windows 电源模式
 - [ ] 同一模型
 - [ ] 同一窗口尺寸
@@ -907,6 +909,8 @@ docs/performance/phase-08-instrumentation.md
 ```text
 docs/performance/phase-09-performance-regression.md
 ```
+
+- [x] 已生成 `phase-09-performance-regression.md`
 
 ---
 
