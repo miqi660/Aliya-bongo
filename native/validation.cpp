@@ -1,5 +1,6 @@
 // Phase 2 专用验收驱动：只在 example 调用，生产 Runtime 不调用读回或测试窗口。
 #include "runtime.h"
+#include "scheduler.h"
 #include <GL/glew.h>
 #include <windows.h>
 #include <dwmapi.h>
@@ -203,6 +204,167 @@ extern "C" int native_validation_run(const char* model, const char* output, unsi
         }
         UnregisterClassW(wc.lpszClassName, wc.hInstance);
         puts("Phase 2 验收通过"); return 0;
+    } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
+    catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }
+}
+
+namespace {
+using SchedulerClock = aliya::RenderScheduler::Clock;
+using SchedulerState = aliya::SchedulerState;
+
+struct SchedulerFrameCounts {
+    uint64_t update = 0;
+    uint64_t render = 0;
+    uint64_t present = 0;
+    uint64_t active = 0;
+    uint64_t idle = 0;
+    uint64_t deepIdle = 0;
+    uint64_t sleep = 0;
+    double delta = 0;
+};
+
+uint64_t& stateCount(SchedulerFrameCounts& counts, SchedulerState state) {
+    switch (state) {
+    case SchedulerState::Active: return counts.active;
+    case SchedulerState::Idle: return counts.idle;
+    case SchedulerState::DeepIdle: return counts.deepIdle;
+    case SchedulerState::Sleep: return counts.sleep;
+    }
+    throw std::runtime_error("未知 Scheduler 状态");
+}
+
+void expectSchedulerFps(const aliya::SchedulerTick& tick, double activeFps) {
+    const double expected = tick.state == SchedulerState::Active ? activeFps
+        : tick.state == SchedulerState::Idle ? 10.0
+        : tick.state == SchedulerState::DeepIdle ? 5.0 : 0.0;
+    check(std::abs(tick.target_fps - expected) < 0.001, "Scheduler FPS 目标错误");
+}
+
+void driveScheduler(aliya::RenderScheduler& scheduler, SchedulerClock::time_point begin,
+    SchedulerClock::time_point end, bool animating, double activeFps, SchedulerFrameCounts& counts) {
+    for (auto now = begin; now <= end; now += std::chrono::milliseconds(1)) {
+        const auto tick = scheduler.tick(now, animating);
+        if (!tick.due) continue;
+        expectSchedulerFps(tick, activeFps);
+        ++counts.update; ++counts.render; ++counts.present;
+        ++stateCount(counts, tick.state);
+        counts.delta += tick.delta_seconds;
+    }
+}
+
+void checkFrameTriplet(const SchedulerFrameCounts& counts) {
+    check(counts.update == counts.render && counts.render == counts.present,
+        "Update/Render/Present 未由同一 Scheduler frame 驱动");
+}
+
+void checkRange(uint64_t value, uint64_t minimum, uint64_t maximum, const char* message) {
+    check(value >= minimum && value <= maximum, message);
+}
+
+struct SchedulerReport {
+    SchedulerFrameCounts active60;
+    SchedulerFrameCounts active30;
+    SchedulerFrameCounts states;
+    double clampedDelta = 0;
+    double motionDelta60 = 0;
+    double motionDelta30 = 0;
+    aliya::SchedulerCounters counters{};
+};
+
+double simulateMotion(double activeFps) {
+    aliya::SchedulerConfig config;
+    config.active_fps = activeFps;
+    aliya::RenderScheduler scheduler(config);
+    const auto start = SchedulerClock::time_point{};
+    scheduler.reset(start);
+    SchedulerFrameCounts counts;
+    driveScheduler(scheduler, start, start + std::chrono::seconds(3), true, activeFps, counts);
+    checkFrameTriplet(counts);
+    check(counts.delta > 2.90 && counts.delta <= 3.01, "Motion delta 未保持实际时间");
+    return counts.delta;
+}
+
+SchedulerReport runSchedulerScenario() {
+    static_assert(SchedulerClock::is_steady, "Scheduler 必须使用 monotonic clock");
+    const auto start = SchedulerClock::time_point{};
+    aliya::SchedulerConfig config;
+    aliya::RenderScheduler scheduler(config);
+
+    SchedulerReport report;
+    scheduler.reset(start);
+    driveScheduler(scheduler, start, start + std::chrono::seconds(1), true, 60, report.active60);
+    checkFrameTriplet(report.active60);
+    checkRange(report.active60.active, 59, 61, "ACTIVE 60 FPS 未受控");
+    check(report.active60.idle == 0 && report.active60.deepIdle == 0
+        && report.active60.sleep == 0, "ACTIVE 意外进入低频状态");
+
+    scheduler.setActiveFps(30);
+    scheduler.reset(start);
+    driveScheduler(scheduler, start, start + std::chrono::seconds(1), true, 30, report.active30);
+    checkFrameTriplet(report.active30);
+    checkRange(report.active30.active, 29, 31, "ACTIVE 30 FPS 未受控");
+
+    scheduler = aliya::RenderScheduler(config);
+    scheduler.reset(start);
+    driveScheduler(scheduler, start, start + std::chrono::milliseconds(3500), false, 60, report.states);
+    checkFrameTriplet(report.states);
+    checkRange(report.states.active, 59, 61, "ACTIVE 状态计数错误");
+    checkRange(report.states.idle, 9, 11, "IDLE 10 FPS 未受控");
+    checkRange(report.states.deepIdle, 4, 6, "DEEP_IDLE 5 FPS 未受控");
+    check(report.states.sleep == 0 && scheduler.state() == SchedulerState::Sleep,
+        "SLEEP 未停止提交");
+    check(scheduler.counters().transition_count == 3, "状态 transition 计数错误");
+    check(scheduler.counters().wakeup_count == 0, "未唤醒时 wakeup 计数错误");
+
+    const auto wakeAt = start + std::chrono::milliseconds(3500);
+    scheduler.wake(wakeAt);
+    const auto wakeTick = scheduler.tick(wakeAt, false);
+    check(wakeTick.due && wakeTick.delta_seconds == 0 && wakeTick.state == SchedulerState::Active,
+        "Sleep → Wake 未重置 delta");
+    check(scheduler.counters().transition_count == 4
+        && scheduler.counters().wakeup_count == 1, "Wake 计数错误");
+    report.counters = scheduler.counters();
+
+    aliya::RenderScheduler clampScheduler(config);
+    clampScheduler.reset(start);
+    check(clampScheduler.tick(start, true).delta_seconds == 0, "首帧 delta 未归零");
+    report.clampedDelta = clampScheduler.tick(start + std::chrono::seconds(1), true).delta_seconds;
+    check(std::abs(report.clampedDelta - config.max_delta_seconds) < 0.001,
+        "large delta 未 clamp");
+
+    report.motionDelta60 = simulateMotion(60);
+    report.motionDelta30 = simulateMotion(30);
+    check(std::abs(report.motionDelta60 - report.motionDelta30) < 0.05,
+        "FPS 变化改变 Motion 实际时间");
+    return report;
+}
+}
+
+extern "C" int native_scheduler_run(unsigned repeats) noexcept {
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    try {
+        check(repeats > 0, "Scheduler 重复次数必须大于零");
+        SchedulerReport report;
+        for (unsigned i = 0; i < repeats; ++i) report = runSchedulerScenario();
+        printf("Phase 4 状态帧: ACTIVE=%llu, IDLE=%llu, DEEP_IDLE=%llu, SLEEP=%llu\n",
+            static_cast<unsigned long long>(report.states.active),
+            static_cast<unsigned long long>(report.states.idle),
+            static_cast<unsigned long long>(report.states.deepIdle),
+            static_cast<unsigned long long>(report.states.sleep));
+        printf("Phase 4 频率: ACTIVE60=%llu, ACTIVE30=%llu, Update=%llu, Render=%llu, Present=%llu\n",
+            static_cast<unsigned long long>(report.active60.active),
+            static_cast<unsigned long long>(report.active30.active),
+            static_cast<unsigned long long>(report.states.update),
+            static_cast<unsigned long long>(report.states.render),
+            static_cast<unsigned long long>(report.states.present));
+        printf("Phase 4 时间: clamp=%.3f, motion60=%.3f, motion30=%.3f, transitions=%llu, wakeups=%llu\n",
+            report.clampedDelta, report.motionDelta60, report.motionDelta30,
+            static_cast<unsigned long long>(report.counters.transition_count),
+            static_cast<unsigned long long>(report.counters.wakeup_count));
+        printf("Phase 4 Scheduler 验收重复=%u\n", repeats);
+        puts("Phase 4 Render Scheduler 验收通过");
+        return 0;
     } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
     catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }
 }

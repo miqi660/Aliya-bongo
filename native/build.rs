@@ -81,6 +81,7 @@ pub fn build() {
     build.file(framework.join("Rendering/csmBlendMode.cpp"));
     build
         .file("../native/runtime.cpp")
+        .file("../native/scheduler.cpp")
         .file("../native/validation.cpp")
         .compile("aliya_native");
     for lib in ["opengl32", "gdi32", "user32", "dwmapi"] {

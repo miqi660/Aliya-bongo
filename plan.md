@@ -462,22 +462,22 @@ SLEEP         0 FPS
 
 ## 任务
 
-- [ ] 建立 `RenderScheduler`
-- [ ] ACTIVE
-- [ ] IDLE
-- [ ] DEEP_IDLE
-- [ ] SLEEP
-- [ ] ACTIVE FPS limiter
-- [ ] Idle timeout
-- [ ] Deep Idle timeout
-- [ ] Sleep condition
-- [ ] monotonic clock
-- [ ] delta time
-- [ ] large delta clamp
-- [ ] Sleep → Wake delta reset
-- [ ] Motion speed 不受 FPS 变化影响
-- [ ] Scheduler transition counter
-- [ ] Scheduler wakeup counter
+- [x] 建立 `RenderScheduler`
+- [x] ACTIVE
+- [x] IDLE
+- [x] DEEP_IDLE
+- [x] SLEEP
+- [x] ACTIVE FPS limiter
+- [x] Idle timeout
+- [x] Deep Idle timeout
+- [x] Sleep condition
+- [x] monotonic clock
+- [x] delta time
+- [x] large delta clamp
+- [x] Sleep → Wake delta reset
+- [x] Motion speed 不受 FPS 变化影响
+- [x] Scheduler transition counter
+- [x] Scheduler wakeup counter
 
 ## 必须确认
 
@@ -498,13 +498,13 @@ Present = 60 FPS
 
 ## Exit Criteria
 
-- [ ] ACTIVE 正常
-- [ ] IDLE 正常
-- [ ] DEEP_IDLE 正常
-- [ ] Render FPS 受控
-- [ ] Present FPS 受控
-- [ ] Motion 时间正确
-- [ ] Wakeup/s 可测量
+- [x] ACTIVE 正常
+- [x] IDLE 正常
+- [x] DEEP_IDLE 正常
+- [x] Render FPS 受控
+- [x] Present FPS 受控
+- [x] Motion 时间正确
+- [x] Wakeup/s 可测量
 
 完成后生成：
 

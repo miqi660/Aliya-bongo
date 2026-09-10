@@ -373,22 +373,22 @@ SLEEP
 0 FPS
 ```
 
-- [ ] 建立 `RenderScheduler`
-- [ ] ACTIVE
-- [ ] IDLE
-- [ ] DEEP_IDLE
-- [ ] SLEEP
-- [ ] 状态 transition 明确
+- [x] 建立 `RenderScheduler`
+- [x] ACTIVE
+- [x] IDLE
+- [x] DEEP_IDLE
+- [x] SLEEP
+- [x] 状态 transition 明确
 
 ## 4.2 FPS 控制
 
-- [ ] ACTIVE 60 FPS
-- [ ] ACTIVE 30 FPS
-- [ ] IDLE 10 FPS
-- [ ] DEEP_IDLE 5 FPS
-- [ ] Render Rate 受控
-- [ ] Present Rate 受控
-- [ ] Update Rate 受控
+- [x] ACTIVE 60 FPS
+- [x] ACTIVE 30 FPS
+- [x] IDLE 10 FPS
+- [x] DEEP_IDLE 5 FPS
+- [x] Render Rate 受控
+- [x] Present Rate 受控
+- [x] Update Rate 受控
 
 禁止：
 
@@ -399,29 +399,29 @@ Present = 60 FPS
 
 ## 4.3 时间系统
 
-- [ ] monotonic clock
-- [ ] delta time 正确
-- [ ] abnormal large delta clamp
-- [ ] Sleep/Wake delta reset
-- [ ] 降低 FPS 不改变 Motion 实际速度
+- [x] monotonic clock
+- [x] delta time 正确
+- [x] abnormal large delta clamp
+- [x] Sleep/Wake delta reset
+- [x] 降低 FPS 不改变 Motion 实际速度
 
 ## 4.4 Scheduler Instrumentation
 
-- [ ] scheduler_wakeup_count
-- [ ] state_transition_count
+- [x] scheduler_wakeup_count
+- [x] state_transition_count
 - [ ] ACTIVE wakeups/s
 - [ ] IDLE wakeups/s
 - [ ] DEEP_IDLE wakeups/s
 
 ## Phase 4 Exit Criteria
 
-- [ ] ACTIVE 正常
-- [ ] IDLE 正常
-- [ ] DEEP_IDLE 正常
-- [ ] FPS cap 正常
-- [ ] Present Rate 正常
-- [ ] Motion 时间正常
-- [ ] 已生成 `phase-04-render-scheduler.md`
+- [x] ACTIVE 正常
+- [x] IDLE 正常
+- [x] DEEP_IDLE 正常
+- [x] FPS cap 正常
+- [x] Present Rate 正常
+- [x] Motion 时间正常
+- [x] 已生成 `phase-04-render-scheduler.md`
 
 ---
 
