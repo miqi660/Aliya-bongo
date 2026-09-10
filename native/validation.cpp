@@ -2,6 +2,7 @@
 #include "runtime.h"
 #include "scheduler.h"
 #include "dirty_sleep.h"
+#include "input_state.h"
 #include <GL/glew.h>
 #include <windows.h>
 #include <dwmapi.h>
@@ -618,6 +619,121 @@ extern "C" int native_dirty_sleep_run(unsigned repeats) noexcept {
             static_cast<unsigned long long>(report.counters.wakeup_count),
             static_cast<unsigned long long>(report.counters.dirty_event_count));
         puts("Phase 5 Dirty Rendering + 0 FPS Sleep 验收通过");
+        return 0;
+    } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
+    catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }
+}
+
+namespace {
+struct InputReport {
+    unsigned mouse_moves = 0;
+    aliya::InputCounters input{};
+    aliya::DirtySleepCounters scheduler{};
+    uint64_t frame_count = 0;
+    uint64_t discrete_event_count = 0;
+};
+
+InputReport runInputScenario(unsigned mouseMoves) {
+    check(mouseMoves >= 500, "MouseMove 压力次数过低");
+    aliya::InputState input;
+    aliya::DirtySleepController controller;
+
+    check(controller.waitForFrame() == aliya::WaitResult::Frame, "输入验收初始 Frame 失败");
+    controller.framePresented();
+
+    auto mouseWait = beginDirtySleepWait(controller);
+    std::thread mouseProducer([&] {
+        for (unsigned i = 0; i < mouseMoves; ++i) {
+            if (input.publishMouseMove(static_cast<double>(i) + 0.25, -static_cast<double>(i) * 0.5))
+                controller.markDirty(aliya::DirtySource::MouseMove);
+        }
+    });
+    finishFrame(mouseWait, "MouseMove 未唤醒 Scheduler");
+    mouseProducer.join();
+    auto mouseSnapshot = input.consume();
+    check(mouseSnapshot.has_mouse_move, "MouseMove latest state 未消费");
+    check(mouseSnapshot.mouse_x == static_cast<double>(mouseMoves - 1) + 0.25
+        && mouseSnapshot.mouse_y == -static_cast<double>(mouseMoves - 1) * 0.5,
+        "MouseMove 未保留最后坐标");
+    check(mouseSnapshot.discrete_events.empty(), "MouseMove 错误进入离散事件队列");
+    controller.framePresented();
+
+    check(!input.hasPending(), "MouseMove 消费后仍有 pending");
+    check(input.publishMouseMove(123.5, -456.25), "下一批 MouseMove 未重新请求 Wake");
+    controller.markDirty(aliya::DirtySource::MouseMove);
+    auto nextMouseWait = beginDirtySleepWait(controller);
+    finishFrame(nextMouseWait, "第二批 MouseMove 未唤醒 Scheduler");
+    const auto nextMouseSnapshot = input.consume();
+    check(nextMouseSnapshot.has_mouse_move && nextMouseSnapshot.mouse_x == 123.5
+        && nextMouseSnapshot.mouse_y == -456.25, "第二批 MouseMove 坐标错误");
+    controller.framePresented();
+
+    auto discreteWait = beginDirtySleepWait(controller);
+    std::thread pressProducer([&] {
+        if (input.publishKeyboard(0x41, true)) controller.markDirty(aliya::DirtySource::Keyboard);
+        input.publishKeyboard(0x42, true);
+        input.publishKeyboard(0x10, true);
+        input.publishMouseButton(aliya::MouseButton::Left, true);
+        input.publishMouseButton(aliya::MouseButton::Right, true);
+    });
+    pressProducer.join();
+    check(input.keyDown(0x41) && input.keyDown(0x42) && input.keyDown(0x10),
+        "多键 Press 状态丢失");
+    check((input.mouseButtons() & 0x3) == 0x3, "多鼠标按键状态丢失");
+    std::thread releaseProducer([&] {
+        input.publishKeyboard(0x41, false);
+        input.publishKeyboard(0x42, false);
+        input.publishKeyboard(0x10, false);
+        input.publishMouseButton(aliya::MouseButton::Left, false);
+        input.publishMouseButton(aliya::MouseButton::Right, false);
+    });
+    releaseProducer.join();
+    finishFrame(discreteWait, "离散输入未唤醒 Scheduler");
+    const auto discreteSnapshot = input.consume();
+    check(discreteSnapshot.discrete_events.size() == 10, "Keyboard/Mouse Press Release 事件丢失");
+    for (size_t i = 0; i < discreteSnapshot.discrete_events.size(); ++i)
+        check(discreteSnapshot.discrete_events[i].sequence == i, "离散输入事件顺序错误");
+    check(!input.keyDown(0x41) && !input.keyDown(0x42) && !input.keyDown(0x10),
+        "快速 Press/Release 产生 stuck key");
+    check(input.mouseButtons() == 0, "快速 Press/Release 产生 stuck mouse button");
+    controller.framePresented();
+
+    const auto inputCounters = input.counters();
+    const auto schedulerCounters = controller.counters();
+    check(inputCounters.raw_mouse_move_count == static_cast<uint64_t>(mouseMoves) + 1,
+        "Raw MouseMove 计数错误");
+    check(inputCounters.consumed_mouse_state_count == 2, "Mouse state 消费次数错误");
+    check(inputCounters.keyboard_event_count == 6 && inputCounters.mouse_button_event_count == 4,
+        "离散输入计数错误");
+    check(inputCounters.wake_request_count == 3 && schedulerCounters.wakeup_count == 3,
+        "输入 Wake 未合并");
+    check(schedulerCounters.dirty_event_count == 3 && schedulerCounters.frame_count == 4,
+        "输入导致 Scheduler frame 线性增长");
+    check(!input.hasPending(), "全部输入消费后仍有 pending");
+
+    return {mouseMoves, inputCounters, schedulerCounters,
+        schedulerCounters.frame_count, static_cast<uint64_t>(discreteSnapshot.discrete_events.size())};
+}
+}
+
+extern "C" int native_input_state_run(unsigned repeats) noexcept {
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    try {
+        check(repeats > 0, "Input State 重复次数必须大于零");
+        InputReport report;
+        for (unsigned repeat = 0; repeat < repeats; ++repeat) {
+            for (const unsigned mouseMoves : {500u, 1000u, 2000u, 4000u, 8000u}) {
+                report = runInputScenario(mouseMoves);
+                printf("Phase 6 压力: raw=%u, consumed=%llu, frames=%llu, wake_requests=%llu, discrete=%llu\n",
+                    report.mouse_moves,
+                    static_cast<unsigned long long>(report.input.consumed_mouse_state_count),
+                    static_cast<unsigned long long>(report.frame_count),
+                    static_cast<unsigned long long>(report.input.wake_request_count),
+                    static_cast<unsigned long long>(report.discrete_event_count));
+            }
+        }
+        puts("Phase 6 Native Input State 验收通过");
         return 0;
     } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
     catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }

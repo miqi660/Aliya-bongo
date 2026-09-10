@@ -505,6 +505,8 @@ Static 状态：
 
 # Phase 6 — Native Input State / 高频输入合并
 
+进度（2026-09-10）：已完成 Native `InputState`、MouseMove latest-state、离散键鼠事件队列和 Wake 合并独立验收。现有 Rust `rdev` → WebView 链路与 Tauri 生产 Native Render Loop 未改接；本阶段不进入 Phase 7。详见 `docs/performance/phase-06-input-state.md`。
+
 ## 6.1 Shared Input State
 
 目标：
@@ -521,50 +523,50 @@ Scheduler
 Runtime Consume
 ```
 
-- [ ] 建立 Shared Input State
-- [ ] latest_mouse_x
-- [ ] latest_mouse_y
-- [ ] Keyboard state
-- [ ] Mouse button state
+- [x] 建立 Shared Input State
+- [x] latest_mouse_x
+- [x] latest_mouse_y
+- [x] Keyboard state
+- [x] Mouse button state
 
 ## 6.2 MouseMove
 
-- [ ] MouseMove 只更新 latest state
-- [ ] MouseMove 不执行 Cubism Update
-- [ ] MouseMove 不调用 OpenGL
-- [ ] MouseMove 不直接 Render
-- [ ] Scheduler tick 消费最新坐标
-- [ ] 中间 MouseMove 可丢弃
+- [x] MouseMove 只更新 latest state
+- [x] MouseMove 不执行 Cubism Update
+- [x] MouseMove 不调用 OpenGL
+- [x] MouseMove 不直接 Render
+- [x] Scheduler tick 消费最新坐标
+- [x] 中间 MouseMove 可丢弃
 
 ## 6.3 离散输入
 
-- [ ] Keyboard Press 不丢
-- [ ] Keyboard Release 不丢
-- [ ] Mouse Left Press 不丢
-- [ ] Mouse Left Release 不丢
-- [ ] Mouse Right Press 不丢
-- [ ] Mouse Right Release 不丢
-- [ ] 多键状态正确
-- [ ] 快速 Press/Release 正确
-- [ ] Modifier 正确
-- [ ] 不出现 stuck state
+- [x] Keyboard Press 不丢
+- [x] Keyboard Release 不丢
+- [x] Mouse Left Press 不丢
+- [x] Mouse Left Release 不丢
+- [x] Mouse Right Press 不丢
+- [x] Mouse Right Release 不丢
+- [x] 多键状态正确
+- [x] 快速 Press/Release 正确
+- [x] Modifier 正确
+- [x] 不出现 stuck state
 
 ## 6.4 Input Thread 约束
 
-- [ ] 不执行 OpenGL
-- [ ] 不执行 Cubism Update
-- [ ] 不做昂贵计算
-- [ ] 不长时间持锁
-- [ ] 不高频 IPC
-- [ ] 不复制大型数据
+- [x] 不执行 OpenGL
+- [x] 不执行 Cubism Update
+- [x] 不做昂贵计算
+- [x] 不长时间持锁
+- [x] 不高频 IPC
+- [x] 不复制大型数据
 
 ## 6.5 高频输入 Benchmark
 
-- [ ] 500 Hz
-- [ ] 1000 Hz
-- [ ] 2000 Hz（设备支持时）
-- [ ] 4000 Hz（设备支持时）
-- [ ] 8000 Hz（设备支持时）
+- [x] 500 Hz 事件压力（独立 example）
+- [x] 1000 Hz 事件压力（独立 example）
+- [x] 2000 Hz 事件压力（独立 example）
+- [x] 4000 Hz 事件压力（独立 example）
+- [x] 8000 Hz 事件压力（独立 example）
 
 记录：
 
@@ -582,11 +584,11 @@ Runtime Consume
 
 ## Phase 6 Exit Criteria
 
-- [ ] MouseMove latest-state 生效
-- [ ] Keyboard/Mouse Button 不丢事件
-- [ ] 高频输入不放大 Runtime
-- [ ] 高频输入不产生 stuck state
-- [ ] 已生成 `phase-06-input-state.md`
+- [x] MouseMove latest-state 生效
+- [x] Keyboard/Mouse Button 不丢事件
+- [x] 高频输入不放大 Native Scheduler frame/Wake
+- [x] 高频输入不产生 stuck state
+- [x] 已生成 `phase-06-input-state.md`
 
 ---
 

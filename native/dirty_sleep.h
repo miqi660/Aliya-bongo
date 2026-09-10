@@ -15,6 +15,9 @@ enum class DirtySource : uint8_t {
     Resize,
     ModelLoad,
     VisibilityChanged,
+    MouseMove,
+    Keyboard,
+    MouseButton,
 };
 
 enum class WaitResult : uint8_t {

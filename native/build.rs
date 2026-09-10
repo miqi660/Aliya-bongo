@@ -83,6 +83,7 @@ pub fn build() {
         .file("../native/runtime.cpp")
         .file("../native/scheduler.cpp")
         .file("../native/dirty_sleep.cpp")
+        .file("../native/input_state.cpp")
         .file("../native/validation.cpp")
         .compile("aliya_native");
     for lib in ["opengl32", "gdi32", "user32", "dwmapi"] {

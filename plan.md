@@ -600,6 +600,8 @@ docs/performance/phase-05-dirty-sleep.md
 
 # 9. Phase 6 — Native Input State / 高频输入合并
 
+进度（2026-09-10）：Native `InputState`、MouseMove latest-state、离散键鼠事件队列和输入 Wake 合并已完成独立验收。现有 Rust `rdev` → WebView 链路与 Tauri 生产 Native Render Loop 尚未改接；本阶段只验证 Native policy 和事件压力，不进入 Phase 7 资源生命周期。详见 `docs/performance/phase-06-input-state.md`。
+
 ## 目标
 
 高 polling rate 输入只更新状态，不直接放大 Runtime Update / Render。
@@ -629,30 +631,30 @@ latest_y
 
 ## 任务
 
-- [ ] 建立 Shared Input State
-- [ ] latest mouse X
-- [ ] latest mouse Y
-- [ ] MouseMove 只覆盖最新状态
-- [ ] MouseMove 不执行 Cubism Update
-- [ ] MouseMove 不调用 OpenGL
-- [ ] MouseMove 不直接 Render
-- [ ] Render/Update tick 消费最新状态
-- [ ] raw mouse counter
-- [ ] consumed mouse counter
-- [ ] Keyboard Press
-- [ ] Keyboard Release
-- [ ] Mouse Left Press/Release
-- [ ] Mouse Right Press/Release
-- [ ] 多键并发
-- [ ] 快速 Press/Release
-- [ ] 修饰键
-- [ ] stuck state 检查
+- [x] 建立 Shared Input State
+- [x] latest mouse X
+- [x] latest mouse Y
+- [x] MouseMove 只覆盖最新状态
+- [x] MouseMove 不执行 Cubism Update
+- [x] MouseMove 不调用 OpenGL
+- [x] MouseMove 不直接 Render
+- [x] Render/Update tick 消费最新状态
+- [x] raw mouse counter
+- [x] consumed mouse counter
+- [x] Keyboard Press
+- [x] Keyboard Release
+- [x] Mouse Left Press/Release
+- [x] Mouse Right Press/Release
+- [x] 多键并发
+- [x] 快速 Press/Release
+- [x] 修饰键
+- [x] stuck state 检查
 
 ## Benchmark
 
-- [ ] 500 Hz
-- [ ] 1000 Hz
-- [ ] 更高 polling rate（设备支持时）
+- [x] 500 Hz 事件压力（独立 example）
+- [x] 1000 Hz 事件压力（独立 example）
+- [x] 更高 polling rate 事件压力（2000/4000/8000，独立 example）
 
 必须确认：
 
@@ -672,10 +674,10 @@ Present Rate
 
 ## Exit Criteria
 
-- [ ] MouseMove latest-state 生效
-- [ ] 离散按键事件不丢
-- [ ] 高频输入不放大 Runtime
-- [ ] 高频输入不导致 stuck state
+- [x] MouseMove latest-state 生效
+- [x] 离散按键事件不丢
+- [x] 高频输入不放大 Native Scheduler frame/Wake
+- [x] 高频输入不导致 stuck state
 
 完成后生成：
 
