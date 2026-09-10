@@ -81,6 +81,7 @@ pub fn build() {
     build.file(framework.join("Rendering/csmBlendMode.cpp"));
     build
         .file("../native/runtime.cpp")
+        .file("../native/instrumentation.cpp")
         .file("../native/scheduler.cpp")
         .file("../native/dirty_sleep.cpp")
         .file("../native/input_state.cpp")

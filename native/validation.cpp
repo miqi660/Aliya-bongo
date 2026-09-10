@@ -3,6 +3,7 @@
 #include "scheduler.h"
 #include "dirty_sleep.h"
 #include "input_state.h"
+#include "instrumentation.h"
 #include <GL/glew.h>
 #include <windows.h>
 #include <dwmapi.h>
@@ -22,6 +23,7 @@ constexpr wchar_t kCloseProperty[] = L"AliyaPhase2ValidationClosed";
 void ok(AliyaStatus status) {
     if (status) throw std::runtime_error("Native 状态码=" + std::to_string(status));
 }
+
 void check(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
 LRESULT CALLBACK procedure(HWND window, UINT message, WPARAM wp, LPARAM lp) {
     // 验收脚本独占销毁顺序，关闭仅隐藏，循环随即结束。
@@ -874,6 +876,199 @@ extern "C" int native_input_state_run(unsigned repeats) noexcept {
             }
         }
         puts("Phase 6 Native Input State 验收通过");
+        return 0;
+    } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
+    catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }
+}
+
+namespace {
+using InstrumentationClock = aliya::RenderScheduler::Clock;
+
+struct InstrumentationFrameCounts {
+    uint64_t active60 = 0;
+    uint64_t active30 = 0;
+    uint64_t active = 0;
+    uint64_t idle = 0;
+    uint64_t deep_idle = 0;
+    uint64_t sleep = 0;
+};
+
+struct InstrumentationReporter {
+    aliya::RenderInstrumentation& instrumentation;
+    InstrumentationClock::time_point next_report{};
+    uint64_t report_count = 0;
+
+    void maybeReport(InstrumentationClock::time_point now) {
+        if (next_report == InstrumentationClock::time_point{})
+            next_report = now + std::chrono::seconds(1);
+        while (now >= next_report) {
+            const auto snapshot = instrumentation.snapshot();
+            printf("Phase 8 Aggregate t=%llus: Update=%llu, Render=%llu, Present=%llu, "
+                   "Input=%llu, Wake=%llu, Sleep=%llu/%llu\n",
+                static_cast<unsigned long long>(report_count + 1),
+                static_cast<unsigned long long>(snapshot.update_count),
+                static_cast<unsigned long long>(snapshot.render_count),
+                static_cast<unsigned long long>(snapshot.present_count),
+                static_cast<unsigned long long>(snapshot.input_count),
+                static_cast<unsigned long long>(snapshot.scheduler_wakeup_count),
+                static_cast<unsigned long long>(snapshot.sleep_enter_count),
+                static_cast<unsigned long long>(snapshot.sleep_exit_count));
+            ++report_count;
+            next_report += std::chrono::seconds(1);
+        }
+    }
+};
+
+struct Phase8TuningReport {
+    InstrumentationFrameCounts frames{};
+    aliya::InstrumentationSnapshot instrumentation{};
+    uint64_t summaries = 0;
+};
+
+Phase8TuningReport runPhase8PolicyScenario() {
+    aliya::RenderInstrumentation instrumentation;
+    InstrumentationReporter reporter{instrumentation};
+    aliya::SchedulerConfig config;
+    aliya::RenderScheduler scheduler(config);
+    const auto start = InstrumentationClock::time_point{};
+    InstrumentationFrameCounts frames;
+
+    auto drive = [&](InstrumentationClock::time_point begin,
+        InstrumentationClock::time_point end, bool animating, uint64_t* bucket) {
+        for (auto now = begin; now <= end; now += std::chrono::milliseconds(1)) {
+            const auto tick = scheduler.tick(now, animating);
+            if (tick.due) {
+                instrumentation.recordUpdate();
+                instrumentation.recordRender();
+                instrumentation.recordPresent();
+                ++*bucket;
+                switch (tick.state) {
+                case aliya::SchedulerState::Active: ++frames.active; break;
+                case aliya::SchedulerState::Idle: ++frames.idle; break;
+                case aliya::SchedulerState::DeepIdle: ++frames.deep_idle; break;
+                case aliya::SchedulerState::Sleep: ++frames.sleep; break;
+                }
+            }
+            reporter.maybeReport(now);
+        }
+    };
+
+    scheduler.setActiveFps(60);
+    scheduler.reset(start);
+    drive(start, start + std::chrono::seconds(1), true, &frames.active60);
+    scheduler.setActiveFps(30);
+    const auto active30Start = start + std::chrono::seconds(1);
+    scheduler.reset(active30Start);
+    drive(active30Start, active30Start + std::chrono::seconds(1), true, &frames.active30);
+
+    scheduler.setActiveFps(60);
+    const auto stateStart = start + std::chrono::seconds(2);
+    scheduler.reset(stateStart);
+    drive(stateStart, stateStart + std::chrono::milliseconds(3500), false, &frames.active);
+    check(frames.active60 >= 59 && frames.active60 <= 61, "Phase 8 ACTIVE 60 FPS 不稳定");
+    check(frames.active30 >= 29 && frames.active30 <= 31, "Phase 8 ACTIVE 30 FPS 不稳定");
+    check(frames.idle >= 9 && frames.idle <= 11, "Phase 8 IDLE 10 FPS 不稳定");
+    check(frames.deep_idle >= 4 && frames.deep_idle <= 6, "Phase 8 DEEP_IDLE 5 FPS 不稳定");
+    check(frames.sleep == 0 && scheduler.state() == aliya::SchedulerState::Sleep,
+        "Phase 8 SLEEP 仍提交帧");
+
+    const auto wakeAt = stateStart + std::chrono::milliseconds(3500);
+    scheduler.wake(wakeAt);
+    instrumentation.recordSchedulerWakeup();
+    const auto wakeTick = scheduler.tick(wakeAt, false);
+    check(wakeTick.due && wakeTick.delta_seconds == 0
+        && wakeTick.state == aliya::SchedulerState::Active, "Phase 8 Wake 未立即恢复一帧");
+    instrumentation.recordUpdate();
+    instrumentation.recordRender();
+    instrumentation.recordPresent();
+    ++frames.active;
+
+    const auto dirty = runDirtySleepScenario();
+    instrumentation.recordSchedulerWakeup(dirty.counters.wakeup_count);
+    instrumentation.recordSleepEnter(dirty.counters.sleep_enter_count);
+    instrumentation.recordSleepExit(dirty.counters.sleep_exit_count);
+
+    const auto input = runInputScenario(500);
+    instrumentation.recordInput(input.input.raw_mouse_move_count
+        + input.input.keyboard_event_count + input.input.mouse_button_event_count);
+    instrumentation.recordMouseMoveRaw(input.input.raw_mouse_move_count);
+    instrumentation.recordMouseMoveConsumed(input.input.consumed_mouse_state_count);
+    instrumentation.recordSchedulerWakeup(input.scheduler.wakeup_count);
+
+    const auto snapshot = instrumentation.snapshot();
+    check(snapshot.update_count == snapshot.render_count
+        && snapshot.render_count == snapshot.present_count,
+        "Phase 8 Update/Render/Present 聚合不一致");
+    check(snapshot.input_count == 511 && snapshot.mouse_move_raw_count == 501
+        && snapshot.mouse_move_consume_count == 2, "Phase 8 Input 聚合计数错误");
+    check(snapshot.scheduler_wakeup_count >= 12
+        && snapshot.sleep_enter_count >= 1 && snapshot.sleep_exit_count >= 1,
+        "Phase 8 Scheduler/Sleep 聚合计数错误");
+    check(reporter.report_count >= 5, "Phase 8 未按 1 秒周期输出 Aggregate Summary");
+    return {frames, snapshot, reporter.report_count};
+}
+
+struct InstrumentationOverhead {
+    uint64_t iterations = 0;
+    uint64_t enabled_ns = 0;
+    uint64_t disabled_ns = 0;
+};
+
+InstrumentationOverhead measureInstrumentationOverhead(unsigned repeats) {
+    const uint64_t iterations = static_cast<uint64_t>(repeats) * 5000;
+    auto measure = [iterations](bool enabled) {
+        aliya::RenderInstrumentation instrumentation(enabled);
+        const auto begin = std::chrono::steady_clock::now();
+        for (uint64_t i = 0; i < iterations; ++i) {
+            instrumentation.recordUpdate();
+            instrumentation.recordRender();
+            instrumentation.recordPresent();
+        }
+        const auto elapsed = std::chrono::steady_clock::now() - begin;
+        const auto snapshot = instrumentation.snapshot();
+        if (enabled) {
+            check(snapshot.update_count == iterations && snapshot.render_count == iterations
+                && snapshot.present_count == iterations, "Phase 8 enabled instrumentation 计数错误");
+        } else {
+            check(snapshot.update_count == 0 && snapshot.render_count == 0
+                && snapshot.present_count == 0, "Phase 8 disabled instrumentation 未关闭");
+        }
+        return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count());
+    };
+    return {iterations, measure(true), measure(false)};
+}
+}
+
+extern "C" int native_instrumentation_run(unsigned repeats) noexcept {
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    try {
+        check(repeats > 0 && repeats <= 10000, "Instrumentation 重复次数必须在 1..10000");
+        const auto report = runPhase8PolicyScenario();
+        const auto overhead = measureInstrumentationOverhead(repeats);
+        printf("Phase 8 FPS: ACTIVE60=%llu, ACTIVE30=%llu, IDLE10=%llu, DEEP_IDLE5=%llu, SLEEP=%llu\n",
+            static_cast<unsigned long long>(report.frames.active60),
+            static_cast<unsigned long long>(report.frames.active30),
+            static_cast<unsigned long long>(report.frames.idle),
+            static_cast<unsigned long long>(report.frames.deep_idle),
+            static_cast<unsigned long long>(report.frames.sleep));
+        printf("Phase 8 Instrumentation: Update=%llu, Render=%llu, Present=%llu, Input=%llu, "
+               "MouseRaw=%llu, MouseConsumed=%llu, SchedulerWake=%llu, SleepEnter=%llu, SleepExit=%llu\n",
+            static_cast<unsigned long long>(report.instrumentation.update_count),
+            static_cast<unsigned long long>(report.instrumentation.render_count),
+            static_cast<unsigned long long>(report.instrumentation.present_count),
+            static_cast<unsigned long long>(report.instrumentation.input_count),
+            static_cast<unsigned long long>(report.instrumentation.mouse_move_raw_count),
+            static_cast<unsigned long long>(report.instrumentation.mouse_move_consume_count),
+            static_cast<unsigned long long>(report.instrumentation.scheduler_wakeup_count),
+            static_cast<unsigned long long>(report.instrumentation.sleep_enter_count),
+            static_cast<unsigned long long>(report.instrumentation.sleep_exit_count));
+        printf("Phase 8 开销: iterations=%llu, enabled=%llu ns, disabled=%llu ns\n",
+            static_cast<unsigned long long>(overhead.iterations),
+            static_cast<unsigned long long>(overhead.enabled_ns),
+            static_cast<unsigned long long>(overhead.disabled_ns));
+        puts("Phase 8 Instrumentation + Release 调优验收通过");
+        Sleep(500);
         return 0;
     } catch (const std::exception& error) { fprintf(stderr, "验收失败: %s\n", error.what()); return 1; }
     catch (...) { fputs("验收失败: 未知异常\n", stderr); return 2; }

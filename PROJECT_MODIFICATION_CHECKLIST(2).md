@@ -674,57 +674,57 @@ Destroy Runtime
 
 允许统计：
 
-- [ ] update_count
-- [ ] render_count
-- [ ] present_count
-- [ ] input_count
-- [ ] mouse_move_raw_count
-- [ ] mouse_move_consume_count
-- [ ] scheduler_wakeup_count
-- [ ] sleep_enter_count
-- [ ] sleep_exit_count
+- [x] update_count
+- [x] render_count
+- [x] present_count
+- [x] input_count
+- [x] mouse_move_raw_count
+- [x] mouse_move_consume_count
+- [x] scheduler_wakeup_count
+- [x] sleep_enter_count
+- [x] sleep_exit_count
 
 ## 8.2 Logging 约束
 
 禁止：
 
-- [ ] MouseMove 每事件 log
-- [ ] Update 每帧 log
-- [ ] Render 每帧 log
-- [ ] Present 每帧 log
+- [x] MouseMove 每事件 log（禁止并已核对）
+- [x] Update 每帧 log（禁止并已核对）
+- [x] Render 每帧 log（禁止并已核对）
+- [x] Present 每帧 log（禁止并已核对）
 
 建议：
 
-- [ ] 每 1 秒 Aggregate Summary
-- [ ] Release 可关闭或降低采样
+- [x] 每 1 秒 Aggregate Summary
+- [x] Release 可关闭或降低采样
 
 ## 8.3 Release 调优
 
 测试：
 
-- [ ] ACTIVE 60
-- [ ] ACTIVE 30
-- [ ] IDLE 10
-- [ ] DEEP_IDLE 5
-- [ ] SLEEP 0
+- [x] ACTIVE 60
+- [x] ACTIVE 30
+- [x] IDLE 10
+- [x] DEEP_IDLE 5
+- [x] SLEEP 0
 
 调优：
 
-- [ ] Idle Timeout
-- [ ] Deep Idle Timeout
-- [ ] FPS Limiter
-- [ ] Wake Strategy
-- [ ] Dirty Strategy
-- [ ] Lock Contention
-- [ ] Present Frequency
-- [ ] Texture Lifetime
+- [x] Idle Timeout
+- [x] Deep Idle Timeout
+- [x] FPS Limiter
+- [x] Wake Strategy
+- [x] Dirty Strategy
+- [ ] Lock Contention（未做独立 ETW/采样器剖析）
+- [x] Present Frequency
+- [ ] Texture Lifetime（沿用 Phase 7，本阶段未改动资源策略）
 
 ## Phase 8 Exit Criteria
 
-- [ ] Release Build 性能稳定
-- [ ] Instrumentation 开销可接受
-- [ ] Scheduler 参数有实测依据
-- [ ] 已生成 `phase-08-instrumentation.md`
+- [x] Release Build 性能稳定（短时独立 Native 场景）
+- [x] Instrumentation 开销可接受（Release 开关基准）
+- [x] Scheduler 参数有实测依据
+- [x] 已生成 `phase-08-instrumentation.md`
 
 ---
 

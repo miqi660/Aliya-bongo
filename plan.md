@@ -778,21 +778,23 @@ docs/performance/phase-07-resource-lifecycle.md
 
 # 11. Phase 8 — Instrumentation + Release 调优
 
+进度（2026-09-10）：已完成 Native `RenderInstrumentation`、每秒 Aggregate Summary、Release 开关开销基准和 ACTIVE 60/30、IDLE 10、DEEP_IDLE 5、SLEEP 0 调优矩阵。独立 Native example 与 Phase 4/5/6 回归通过；Tauri 生产 Render Loop 尚未接入，不进入 Phase 9。详见 `docs/performance/phase-08-instrumentation.md`。
+
 ## 目标
 
 建立低开销性能观测，并在 Release Build 中调优。
 
 ## Instrumentation
 
-- [ ] update_count
-- [ ] render_count
-- [ ] present_count
-- [ ] input_count
-- [ ] mouse_move_raw_count
-- [ ] mouse_move_consume_count
-- [ ] scheduler_wakeup_count
-- [ ] sleep_enter_count
-- [ ] sleep_exit_count
+- [x] update_count
+- [x] render_count
+- [x] present_count
+- [x] input_count
+- [x] mouse_move_raw_count
+- [x] mouse_move_consume_count
+- [x] scheduler_wakeup_count
+- [x] sleep_enter_count
+- [x] sleep_exit_count
 
 禁止：
 
@@ -812,34 +814,36 @@ Update 每帧 log
 
 测试：
 
-- [ ] ACTIVE 60 FPS
-- [ ] ACTIVE 30 FPS
-- [ ] IDLE 10 FPS
-- [ ] DEEP_IDLE 5 FPS
-- [ ] SLEEP 0 FPS
+- [x] ACTIVE 60 FPS
+- [x] ACTIVE 30 FPS
+- [x] IDLE 10 FPS
+- [x] DEEP_IDLE 5 FPS
+- [x] SLEEP 0 FPS
 
 调优：
 
-- [ ] idle timeout
-- [ ] deep idle timeout
-- [ ] FPS limiter
-- [ ] Wake strategy
-- [ ] Dirty strategy
-- [ ] Lock contention
-- [ ] Present frequency
-- [ ] Texture lifetime
+- [x] idle timeout
+- [x] deep idle timeout
+- [x] FPS limiter
+- [x] Wake strategy
+- [x] Dirty strategy
+- [ ] Lock contention（未做独立 ETW/采样器剖析）
+- [x] Present frequency
+- [ ] Texture lifetime（沿用 Phase 7，本阶段未改动资源策略）
 
 ## Exit Criteria
 
-- [ ] Release Build 性能数据稳定
-- [ ] Instrumentation 本身开销可忽略
-- [ ] Scheduler 参数有实测依据
+- [x] Release Build 性能数据稳定（短时独立 Native 场景）
+- [x] Instrumentation 本身开销可接受（Release 开关基准）
+- [x] Scheduler 参数有实测依据
 
 完成后生成：
 
 ```text
 docs/performance/phase-08-instrumentation.md
 ```
+
+- [x] 已生成 `phase-08-instrumentation.md`
 
 ---
 

@@ -81,3 +81,7 @@ required-features = ["native-runtime"]
 [[example]]
 name = "native_resource_lifecycle"
 required-features = ["native-runtime"]
+
+[[example]]
+name = "native_instrumentation"
+required-features = ["native-runtime"]
