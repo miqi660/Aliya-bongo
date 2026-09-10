@@ -325,60 +325,62 @@ docs/performance/phase-01-native-runtime.md
 
 ## Cubism 任务
 
-- [ ] Cubism Framework Init
-- [ ] Allocator
-- [ ] Model Load
-- [ ] `.model3.json`
-- [ ] `.moc3`
-- [ ] Texture
-- [ ] Motion
-- [ ] Expression
-- [ ] Parameter Set/Add
+- [x] Cubism Framework Init
+- [x] Allocator
+- [x] Model Load
+- [x] `.model3.json`
+- [x] `.moc3`
+- [x] Texture
+- [x] Motion
+- [x] Expression
+- [x] Parameter Set/Add
 
 ## OpenGL 任务
 
-- [ ] 创建 OpenGL Context
-- [ ] 明确 Context Current Thread
-- [ ] 初始化 OpenGL functions
-- [ ] Cubism OpenGL Renderer
-- [ ] Shader
-- [ ] Texture Upload
-- [ ] Blend
-- [ ] 透明背景
-- [ ] Viewport
-- [ ] Model Matrix
-- [ ] Resize
+- [x] 创建 OpenGL Context
+- [x] 明确 Context Current Thread
+- [x] 初始化 OpenGL functions
+- [x] Cubism OpenGL Renderer
+- [x] Shader
+- [x] Texture Upload
+- [x] Blend
+- [x] 透明背景
+- [x] Viewport
+- [x] Model Matrix
+- [x] Resize
 
 ## 性能约束
 
 禁止：
 
-- [ ] 每帧 Shader Compile
-- [ ] 每帧 Program Link
-- [ ] 每帧 Texture Upload
-- [ ] 每帧 JSON Parse
-- [ ] 每帧 Framebuffer Recreate
-- [ ] 每帧 GPU Resource Create/Destroy
-- [ ] 正常路径长期 `glFinish`
-- [ ] 正常路径无必要 `glReadPixels`
+- [x] 每帧 Shader Compile
+- [x] 每帧 Program Link
+- [x] 每帧 Texture Upload
+- [x] 每帧 JSON Parse
+- [x] 每帧 Framebuffer Recreate
+- [x] 每帧 GPU Resource Create/Destroy
+- [x] 正常路径长期 `glFinish`
+- [x] 正常路径无必要 `glReadPixels`
 
 ## Exit Criteria
 
-- [ ] 模型正常显示
-- [ ] Texture 正常
-- [ ] Parameter 正常
-- [ ] Motion 正常
-- [ ] Expression 正常
-- [ ] Resize 正常
-- [ ] Unload 正常
-- [ ] Reload 正常
-- [ ] Destroy 正常
+- [x] 模型正常显示
+- [x] Texture 正常
+- [x] Parameter 正常
+- [x] Motion 正常
+- [x] Expression 正常
+- [x] Resize 正常
+- [x] Unload 正常
+- [x] Reload 正常
+- [x] Destroy 正常
 
 完成后生成：
 
 ```text
 docs/performance/phase-02-cubism-opengl.md
 ```
+
+状态：已生成并完成 Phase 2 Exit Criteria 验收；不进入 Phase 3。
 
 ---
 

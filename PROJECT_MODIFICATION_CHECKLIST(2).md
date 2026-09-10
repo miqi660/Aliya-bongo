@@ -189,7 +189,7 @@ C++ Runtime
 
 ## 1.3 最小 Runtime API
 
-本节勾选表示 ABI 已定义、导出并完成链接；模型/渲染操作目前返回 `ALIYA_NOT_IMPLEMENTED`，真实实现属于 Phase 2。
+本节勾选表示 ABI 已定义、导出并完成链接；模型/渲染操作的真实实现与验收记录见 Phase 2。
 
 - [x] `model_load`
 - [x] `model_unload`
@@ -229,74 +229,74 @@ C++ Runtime
 
 ## 2.1 Cubism Framework
 
-- [ ] Cubism Framework Init
-- [ ] Allocator 正常
-- [ ] Model 加载框架建立
-- [ ] `.model3.json` 正常
-- [ ] `.moc3` 正常
-- [ ] Texture metadata 正常
-- [ ] Motion metadata 正常
-- [ ] Expression metadata 正常
+- [x] Cubism Framework Init
+- [x] Allocator 正常
+- [x] Model 加载框架建立
+- [x] `.model3.json` 正常
+- [x] `.moc3` 正常
+- [x] Texture metadata 正常
+- [x] Motion metadata 正常
+- [x] Expression metadata 正常
 
 ## 2.2 OpenGL Context
 
-- [ ] 创建 OpenGL Context
-- [ ] 明确 Context 创建线程
-- [ ] 明确 Context Current 线程
-- [ ] 明确 Render 线程
-- [ ] 明确 Swap/Present 线程
-- [ ] OpenGL functions 初始化正常
-- [ ] Context Destroy 顺序明确
+- [x] 创建 OpenGL Context
+- [x] 明确 Context 创建线程
+- [x] 明确 Context Current 线程
+- [x] 明确 Render 线程
+- [x] 明确 Swap/Present 线程
+- [x] OpenGL functions 初始化正常
+- [x] Context Destroy 顺序明确
 
 ## 2.3 Cubism OpenGL Renderer
 
-- [ ] 创建 Cubism OpenGL Renderer
-- [ ] Shader 正常
-- [ ] Texture Upload 正常
-- [ ] Blend 正常
-- [ ] 透明背景正常
-- [ ] Viewport 正常
-- [ ] Model Matrix 正常
-- [ ] Scale 正常
-- [ ] Resize 正常
+- [x] 创建 Cubism OpenGL Renderer
+- [x] Shader 正常
+- [x] Texture Upload 正常
+- [x] Blend 正常
+- [x] 透明背景正常
+- [x] Viewport 正常
+- [x] Model Matrix 正常
+- [x] Scale 正常
+- [x] Resize 正常
 
 ## 2.4 Runtime 功能
 
-- [ ] Parameter Set
-- [ ] Parameter Add
-- [ ] Motion Start
-- [ ] Motion Stop
-- [ ] Expression
-- [ ] Model Unload
-- [ ] Model Reload
-- [ ] Runtime Destroy
+- [x] Parameter Set
+- [x] Parameter Add
+- [x] Motion Start
+- [x] Motion Stop
+- [x] Expression
+- [x] Model Unload
+- [x] Model Reload
+- [x] Runtime Destroy
 
 ## 2.5 OpenGL 性能约束
 
 确认不存在：
 
-- [ ] 每帧 Shader Compile
-- [ ] 每帧 Program Link
-- [ ] 每帧 Texture Upload
-- [ ] 每帧 Texture Decode
-- [ ] 每帧 JSON Parse
-- [ ] 每帧 Framebuffer Recreate
-- [ ] 每帧 GPU Resource Create
-- [ ] 每帧 GPU Resource Destroy
-- [ ] 正常 Render Path 长期 `glFinish`
-- [ ] 正常 Render Path 无必要 `glReadPixels`
+- [x] 每帧 Shader Compile
+- [x] 每帧 Program Link
+- [x] 每帧 Texture Upload
+- [x] 每帧 Texture Decode
+- [x] 每帧 JSON Parse
+- [x] 每帧 Framebuffer Recreate
+- [x] 每帧 GPU Resource Create
+- [x] 每帧 GPU Resource Destroy
+- [x] 正常 Render Path 长期 `glFinish`
+- [x] 正常 Render Path 无必要 `glReadPixels`
 
 ## Phase 2 Exit Criteria
 
-- [ ] 测试模型正常显示
-- [ ] 透明背景正确
-- [ ] Parameter 正常
-- [ ] Motion 正常
-- [ ] Expression 正常
-- [ ] Resize 正常
-- [ ] Unload/Reload 正常
-- [ ] Destroy 正常
-- [ ] 已生成 `phase-02-cubism-opengl.md`
+- [x] 测试模型正常显示
+- [x] 透明背景正确
+- [x] Parameter 正常
+- [x] Motion 正常
+- [x] Expression 正常
+- [x] Resize 正常
+- [x] Unload/Reload 正常
+- [x] Destroy 正常
+- [x] 已生成 `phase-02-cubism-opengl.md`
 
 ---
 

@@ -1,4 +1,4 @@
-//! Phase 1.4 create/destroy 压力验证；模型与渲染 API 仍为占位。
+//! 无窗口 Runtime 的 create/destroy 回归；模型与 OpenGL 由 native_opengl 验证。
 use std::{env, ptr, thread, time::Duration};
 
 use bongo_cat_lib::native_runtime::{NativeRuntime, ffi::*};

@@ -4,6 +4,8 @@
 
 本次完成：完成 1.1–1.4 Skeleton 压力与内存检查，并评估 Phase 1 Exit Criteria。Phase 1 Skeleton Exit Criteria 通过；不进入 Phase 2。
 
+Phase 1.4 状态：通过评估。
+
 ## SDK 与构建
 
 使用用户提供的 `D:\code\Aliya-bongo\CubismSdkForNative-5-r.5`，不复制或修改 SDK。构建优先读取 `CUBISM_SDK_ROOT`，未设置时使用仓库同级的 `CubismSdkForNative-5-r.5`，代码不包含个人绝对路径。
@@ -73,7 +75,7 @@ pnpm build
 
 前端 `pnpm build` 已通过。首次 Debug 构建遇到 Tauri 缓存 E0463（找不到 tauri crate），执行 `cargo clean -p tauri` 后重建恢复；未修改依赖业务代码。
 
-## Phase 1.4 结果与 Exit Criteria 评估
+## Phase 1.4 结果：通过评估与 Exit Criteria
 
 - `create/destroy ×10`：Debug 与 Release 均 PASS。
 - `create/destroy ×100`：Debug 与 Release 均 PASS。
